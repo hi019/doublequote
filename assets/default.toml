@@ -1,0 +1,22 @@
+# The default Doublequote config.
+# If a config value is not passed by the user, then it will fall back to the value here.
+
+[http]
+port = 8080
+
+[app]
+require_email_verification = false
+secret = "CHANGE-ME"
+
+[database]
+url = "file:./data.db"
+
+[redis]
+url = "localhost:6379"
+
+[smtp]
+url = "localhost:1025"
+host = "localhost"
+identity = ""
+username = ""
+password = ""

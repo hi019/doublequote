@@ -1,0 +1,6 @@
+.idea
+*.db
+dump.rdb
+doublequote.toml
+doublequote
+assets/frontend/*
