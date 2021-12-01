@@ -2,7 +2,6 @@
 # Make sure to check the documentation at https://goreleaser.com
 before:
   hooks:
-    - go mod tidy
     - make build-js; cp -r ./frontend/build/* ./assets/frontend
 builds:
   -
