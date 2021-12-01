@@ -5,3 +5,4 @@ doublequote.toml
 doublequote
 assets/frontend/*
 !assets/frontend/.gitkeep
+dist/
