@@ -1,9 +1,5 @@
 # This is an example .goreleaser.yml file with some sensible defaults.
 # Make sure to check the documentation at https://goreleaser.com
-before:
-  hooks:
-    - go mod tidy
-    - make build-js; cp -r ./frontend/build/* ./assets/frontend
 builds:
   -
     main: ./cmd
@@ -17,6 +13,11 @@ builds:
       - amd64
       - arm
       - arm64
+    hooks:
+      pre:
+        - go mod tidy
+        - make generate
+        - make build-js; cp -r ./frontend/build/* ./assets/frontend
 
 archives:
   - replacements:
