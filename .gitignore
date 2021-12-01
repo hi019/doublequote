@@ -4,3 +4,4 @@ dump.rdb
 doublequote.toml
 doublequote
 assets/frontend/*
+!assets/frontend/.gitkeep

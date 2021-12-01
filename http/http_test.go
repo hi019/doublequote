@@ -17,6 +17,7 @@ type TestServer struct {
 	CryptoService     *mock.CryptoService
 	SessionService    *mock.SessionService
 	CollectionService *mock.CollectionService
+	FeedService       *mock.FeedService
 }
 
 func NewTestServer() *TestServer {

@@ -98,8 +98,7 @@ type getCollectionFeedsResponse struct {
 		ID     int    `json:"id"`
 		Name   string `json:"name"`
 		Domain string `json:"domain"`
-		RssURL string `json:"rss_url"`
-	}
+	} `json:"feeds"`
 }
 
 func (s *Server) handleGetCollectionFeeds(w http.ResponseWriter, r *http.Request) {
@@ -125,12 +124,10 @@ func (s *Server) handleGetCollectionFeeds(w http.ResponseWriter, r *http.Request
 			ID     int    `json:"id"`
 			Name   string `json:"name"`
 			Domain string `json:"domain"`
-			RssURL string `json:"rss_url"`
 		}{
 			ID:     feed.ID,
 			Name:   feed.Name,
 			Domain: feed.Domain,
-			RssURL: feed.RssURL,
 		}
 		res.Feeds = append(res.Feeds, s)
 	}

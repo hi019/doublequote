@@ -89,9 +89,9 @@ func TestServer_handleGetCollectionsFeeds(t *testing.T) {
 	t.Run("OK", func(t *testing.T) {
 		s := NewTestServer()
 
-		s.CollectionService.
+		s.FeedService.
 			On("FindFeeds", mock.Anything, dq.FeedFilter{CollectionID: utils.IntPtr(1), Limit: 500}, dq.FeedInclude{}).
-			Return([]*dq.Feed{{ID: 1, Name: "Test"}}, 1, nil)
+			Return([]*dq.Feed{{ID: 1, Name: "Test", Domain: "test.com"}}, 1, nil)
 
 		req, err := http.NewRequest("GET", "", nil)
 		assert.Nil(t, err)
@@ -103,7 +103,7 @@ func TestServer_handleGetCollectionsFeeds(t *testing.T) {
 		rr := MakeAuthenticatedRequest(req, s.handleGetCollectionFeeds, &dq.User{Email: "test@example.com"})
 		s.UserService.AssertExpectations(t)
 		assert.Equal(t, http.StatusOK, rr.Code)
-		assert.JSONEq(t, `{ "data": { "feeds": [{"id": 1, "name": "Test"}] } }`, rr.Body.String())
+		assert.JSONEq(t, `{ "data": { "feeds": [{"id": 1, "name": "Test", "domain": "test.com"}] } }`, rr.Body.String())
 	})
 
 	t.Run("DbErr", func(t *testing.T) {
