@@ -1,10 +1,14 @@
 package utils
 
 import (
+	"context"
 	"crypto/rand"
 	"math/big"
+	"net/http"
 	"testing"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
 const TimeDay = time.Hour * 24
@@ -46,4 +50,12 @@ func MustParseTime(t *testing.T, toParse string) time.Time {
 	}
 
 	return parsed
+}
+
+func AddParamToContext(t *testing.T, req *http.Request, key, value string) {
+	t.Helper()
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add(key, value)
+	*req = *req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 }

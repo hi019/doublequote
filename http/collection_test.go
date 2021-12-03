@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,7 +8,6 @@ import (
 
 	dq "doublequote"
 	"doublequote/utils"
-	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -93,12 +91,13 @@ func TestServer_handleGetCollectionsFeeds(t *testing.T) {
 			On("FindFeeds", mock.Anything, dq.FeedFilter{CollectionID: utils.IntPtr(1), Limit: 500}, dq.FeedInclude{}).
 			Return([]*dq.Feed{{ID: 1, Name: "Test", Domain: "test.com"}}, 1, nil)
 
-		req, err := http.NewRequest("GET", "", nil)
-		assert.Nil(t, err)
+		s.CollectionService.
+			On("FindCollectionByID", mock.Anything, 1, dq.CollectionInclude{}).
+			Return(&dq.Collection{}, nil)
 
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("collectionID", "1")
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+		req, err := http.NewRequest("GET", "", nil)
+		utils.AddParamToContext(t, req, "collectionID", "1")
+		assert.Nil(t, err)
 
 		rr := MakeAuthenticatedRequest(req, s.handleGetCollectionFeeds, &dq.User{Email: "test@example.com"})
 		s.UserService.AssertExpectations(t)
@@ -120,5 +119,48 @@ func TestServer_handleGetCollectionsFeeds(t *testing.T) {
 		s.UserService.AssertExpectations(t)
 		assert.Equal(t, http.StatusInternalServerError, rr.Code)
 		assert.JSONEq(t, `{"title": "Internal error.", "type": "about:blank"}`, rr.Body.String())
+	})
+
+	t.Run("CollectionNotFound", func(t *testing.T) {
+		s := NewTestServer()
+
+		s.FeedService.
+			On("FindFeeds", mock.Anything, dq.FeedFilter{CollectionID: utils.IntPtr(1), Limit: 500}, dq.FeedInclude{}).
+			Return([]*dq.Feed{{ID: 1, Name: "Test", Domain: "test.com"}}, 1, nil)
+
+		s.CollectionService.
+			On("FindCollectionByID", mock.Anything, 1, dq.CollectionInclude{}).
+			Return(&dq.Collection{}, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Collection"))
+
+		req, err := http.NewRequest("GET", "", nil)
+		utils.AddParamToContext(t, req, "collectionID", "1")
+		assert.Nil(t, err)
+
+		rr := MakeAuthenticatedRequest(req, s.handleGetCollectionFeeds, &dq.User{Email: "test@example.com"})
+		s.UserService.AssertExpectations(t)
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+		assert.JSONEq(t, `{"title":"Collection not found.", "type":"about:blank"}`, rr.Body.String())
+	})
+
+	t.Run("CollectionOwnedByOtherUser", func(t *testing.T) {
+		s := NewTestServer()
+
+		s.FeedService.
+			On("FindFeeds", mock.Anything, dq.FeedFilter{CollectionID: utils.IntPtr(1), Limit: 500}, dq.FeedInclude{}).
+			Return([]*dq.Feed{{ID: 1, Name: "Test", Domain: "test.com"}}, 1, nil)
+
+		// Return collection owned by other user
+		s.CollectionService.
+			On("FindCollectionByID", mock.Anything, 1, dq.CollectionInclude{}).
+			Return(&dq.Collection{UserID: 2}, nil)
+
+		req, err := http.NewRequest("GET", "", nil)
+		utils.AddParamToContext(t, req, "collectionID", "1")
+		assert.Nil(t, err)
+
+		rr := MakeAuthenticatedRequest(req, s.handleGetCollectionFeeds, &dq.User{ID: 1})
+		s.UserService.AssertExpectations(t)
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+		assert.JSONEq(t, `{"title":"Collection not found.", "type":"about:blank"}`, rr.Body.String())
 	})
 }

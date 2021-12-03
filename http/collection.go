@@ -108,6 +108,15 @@ func (s *Server) handleGetCollectionFeeds(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Make sure the requesting user owns the collection
+	if col, err := s.CollectionService.FindCollectionByID(r.Context(), colID, dq.CollectionInclude{}); err != nil {
+		Error(w, r, err)
+		return
+	} else if col.UserID != dq.UserIDFromContext(r.Context()) {
+		Error(w, r, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Collection"))
+		return
+	}
+
 	filter := dq.FeedFilter{
 		CollectionID: utils.IntPtr(colID),
 		Limit:        500,
@@ -135,3 +144,16 @@ func (s *Server) handleGetCollectionFeeds(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusOK)
 	sendJSON(w, r, res)
 }
+
+//func (s *Server) handlePutCollectionFeeds(w http.ResponseWriter, r *http.Request) {
+//	colID, err := strconv.Atoi(chi.URLParam(r, "collectionID"))
+//	if err != nil {
+//		Error(w, r, err)
+//		return
+//	}
+//
+//	//s.CollectionService.UpdateCollection(r.Context(), colID, )
+//
+//	w.WriteHeader(http.StatusOK)
+//	sendJSON(w, r, res)
+//}
