@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -92,7 +91,7 @@ func TestCollectionService_FindCollectionByID(t *testing.T) {
 			).With(
 				prisma.Collection.User.Fetch(),
 			),
-		).Errors(sql.ErrNoRows)
+		).Errors(prisma.ErrNotFound)
 
 		found, err := s.svc.FindCollectionByID(context.Background(), 1, dq.CollectionInclude{})
 
@@ -352,6 +351,7 @@ func TestCollectionService_UpdateCollection(t *testing.T) {
 				Update(
 					prisma.Collection.Name.SetIfPresent(utils.StringPtr("Tech News")),
 					prisma.Collection.UserID.SetIfPresent(utils.IntPtr(2)),
+					prisma.Collection.Feeds.Link(prisma.Feed.ID.InIfPresent(nil)),
 				),
 		).Returns(result)
 
@@ -384,8 +384,9 @@ func TestCollectionService_UpdateCollection(t *testing.T) {
 				Update(
 					prisma.Collection.Name.SetIfPresent(utils.StringPtr("Tech News 2")),
 					prisma.Collection.UserID.SetIfPresent(nil),
+					prisma.Collection.Feeds.Link(prisma.Feed.ID.InIfPresent(nil)),
 				),
-		).Errors(sql.ErrNoRows)
+		).Errors(prisma.ErrNotFound)
 
 		updated, err := s.svc.
 			UpdateCollection(

@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"database/sql"
 
 	"doublequote"
 	"doublequote/prisma"
@@ -34,7 +33,7 @@ func (s *UserService) FindUserByID(ctx context.Context, id int, include dq.UserI
 		With(buildUserInclude(include)...)
 
 	dbU, err := q.Exec(ctx)
-	if err == sql.ErrNoRows {
+	if err == prisma.ErrNotFound {
 		return nil, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "User")
 	}
 	if err != nil {
@@ -110,7 +109,7 @@ func (s *UserService) UpdateUser(ctx context.Context, id int, upd dq.UserUpdate)
 			prisma.User.EmailVerifiedAt.SetIfPresent(upd.EmailVerifiedAt),
 		).
 		Exec(ctx)
-	if err == sql.ErrNoRows {
+	if err == prisma.ErrNotFound {
 		return nil, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "User")
 	}
 	if err != nil {

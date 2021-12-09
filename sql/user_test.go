@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -116,7 +115,7 @@ func TestUserService_FindUserByID(t *testing.T) {
 			s.db.client.User.FindFirst(
 				prisma.User.ID.Equals(1),
 			),
-		).Errors(sql.ErrNoRows)
+		).Errors(prisma.ErrNotFound)
 
 		found, err := s.svc.FindUserByID(context.Background(), 1, dq.UserInclude{})
 
@@ -172,7 +171,7 @@ func TestUserService_FindUsers(t *testing.T) {
 			client.User.FindFirst(
 				prisma.User.ID.Equals(1),
 			),
-		).Errors(sql.ErrNoRows)
+		).Errors(prisma.ErrNotFound)
 
 		found, err := s.FindUserByID(context.Background(), 1, dq.UserInclude{})
 
@@ -306,7 +305,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 					prisma.User.Password.SetIfPresent(utils.StringPtr("hashed-password")),
 					prisma.User.EmailVerifiedAt.SetIfPresent(nil),
 				),
-		).Errors(sql.ErrNoRows)
+		).Errors(prisma.ErrNotFound)
 
 		updated, err := s.svc.UpdateUser(context.Background(), 1, dq.UserUpdate{Email: utils.StringPtr("test@example.com"), Password: utils.StringPtr("hashed-password")})
 

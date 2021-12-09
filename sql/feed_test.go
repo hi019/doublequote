@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -108,7 +107,7 @@ func TestFeedService_FindFeedByID(t *testing.T) {
 			s.db.client.Feed.FindFirst(
 				prisma.Feed.ID.Equals(1),
 			),
-		).Errors(sql.ErrNoRows)
+		).Errors(prisma.ErrNotFound)
 
 		found, err := s.svc.FindFeedByID(context.Background(), 1, dq.FeedInclude{})
 
@@ -220,7 +219,7 @@ func TestFeedService_FindFeed(t *testing.T) {
 			s.db.client.Feed.FindFirst(
 				prisma.Feed.ID.Equals(1),
 			),
-		).Errors(sql.ErrNoRows)
+		).Errors(prisma.ErrNotFound)
 
 		found, err := s.svc.FindFeedByID(context.Background(), 1, dq.FeedInclude{})
 
@@ -431,7 +430,7 @@ func TestFeedService_UpdateFeed(t *testing.T) {
 					prisma.Feed.RssURL.SetIfPresent(nil),
 					prisma.Feed.Domain.SetIfPresent(nil),
 				),
-		).Errors(sql.ErrNoRows)
+		).Errors(prisma.ErrNotFound)
 
 		updated, err := s.svc.
 			UpdateFeed(

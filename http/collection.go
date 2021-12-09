@@ -14,8 +14,10 @@ import (
 )
 
 func (s *Server) registerCollectionRoutes(r chi.Router) {
-	r.Get("/collection", s.handleListCollections)
-	r.Post("/collection", s.handleCreateCollection)
+	r.Get("/collections/{collectionID}/feeds", s.handleGetCollectionFeeds)
+	r.Put("/collections/{collectionID}/feeds", s.handlePutCollectionFeeds)
+	r.Get("/collections", s.handleListCollections)
+	r.Post("/collections", s.handleCreateCollection)
 }
 
 type createCollectionRequest struct {
@@ -145,15 +147,41 @@ func (s *Server) handleGetCollectionFeeds(w http.ResponseWriter, r *http.Request
 	sendJSON(w, r, res)
 }
 
-//func (s *Server) handlePutCollectionFeeds(w http.ResponseWriter, r *http.Request) {
-//	colID, err := strconv.Atoi(chi.URLParam(r, "collectionID"))
-//	if err != nil {
-//		Error(w, r, err)
-//		return
-//	}
-//
-//	//s.CollectionService.UpdateCollection(r.Context(), colID, )
-//
-//	w.WriteHeader(http.StatusOK)
-//	sendJSON(w, r, res)
-//}
+type putCollectionFeedsRequest struct {
+	Feeds []int `json:"feeds"`
+}
+
+func (s *Server) handlePutCollectionFeeds(w http.ResponseWriter, r *http.Request) {
+	colID, err := strconv.Atoi(chi.URLParam(r, "collectionID"))
+	if err != nil {
+		Error(w, r, err)
+		return
+	}
+
+	// Make sure the requesting user owns the collection
+	if col, err := s.CollectionService.FindCollectionByID(r.Context(), colID, dq.CollectionInclude{}); err != nil {
+		Error(w, r, err)
+		return
+	} else if col.UserID != dq.UserIDFromContext(r.Context()) {
+		Error(w, r, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Collection"))
+		return
+	}
+
+	// Parse and validate request body
+	var req putCollectionFeedsRequest
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		Error(w, r, dq.Errorf(dq.EINVALID, dq.ErrInvalidJSONBody))
+		return
+	}
+
+	// Update collection
+	_, err = s.CollectionService.UpdateCollection(r.Context(), colID, dq.CollectionUpdate{FeedsIDs: req.Feeds})
+	if err != nil {
+		Error(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	sendJSON(w, r, req)
+}

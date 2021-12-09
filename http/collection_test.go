@@ -164,3 +164,51 @@ func TestServer_handleGetCollectionsFeeds(t *testing.T) {
 		assert.JSONEq(t, `{"title":"Collection not found.", "type":"about:blank"}`, rr.Body.String())
 	})
 }
+
+func TestServer_handlePutCollectionFeeds(t *testing.T) {
+	t.Run("OK", func(t *testing.T) {
+		s := NewTestServer()
+
+		// Setup mocks
+		s.CollectionService.
+			On("FindCollectionByID", mock.Anything, 1, dq.CollectionInclude{}).
+			Return(&dq.Collection{}, nil)
+
+		s.CollectionService.
+			On("UpdateCollection", mock.Anything, 1, dq.CollectionUpdate{FeedsIDs: []int{1, 2}}).
+			Return(&dq.Collection{}, nil)
+
+		// Setup request
+		req, err := http.NewRequest("PUT", "", strings.NewReader(`{"feeds": [1, 2]}`))
+		utils.AddParamToContext(t, req, "collectionID", "1")
+		assert.Nil(t, err)
+
+		// Make request
+		rr := MakeAuthenticatedRequest(req, s.handlePutCollectionFeeds, &dq.User{})
+
+		s.UserService.AssertExpectations(t)
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.JSONEq(t, `{ "data": { "feeds": [1,2] } }`, rr.Body.String())
+	})
+
+	t.Run("OtherUsersCollection", func(t *testing.T) {
+		s := NewTestServer()
+
+		// Setup mocks
+		s.CollectionService.
+			On("FindCollectionByID", mock.Anything, 1, dq.CollectionInclude{}).
+			Return(&dq.Collection{}, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Collection"))
+
+		// Setup request
+		req, err := http.NewRequest("PUT", "", strings.NewReader(`{"feeds": [1, 2]}`))
+		utils.AddParamToContext(t, req, "collectionID", "1")
+		assert.Nil(t, err)
+
+		// Make request
+		rr := MakeAuthenticatedRequest(req, s.handlePutCollectionFeeds, &dq.User{})
+
+		s.UserService.AssertExpectations(t)
+		assert.Equal(t, http.StatusNotFound, rr.Code)
+		assert.JSONEq(t, `{ "title": "Collection not found.", "type": "about:blank" }`, rr.Body.String())
+	})
+}

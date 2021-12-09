@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"database/sql"
 
 	dq "doublequote"
 	"doublequote/prisma"
@@ -24,7 +23,7 @@ func (s *FeedService) FindFeedByID(ctx context.Context, id int, include dq.FeedI
 		FindFirst(prisma.Feed.ID.Equals(id)).
 		With(buildFeedInclude(include)...).
 		Exec(ctx)
-	if err == sql.ErrNoRows {
+	if err == prisma.ErrNotFound {
 		return nil, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Feed")
 	}
 	if err != nil {
@@ -93,7 +92,7 @@ func (s *FeedService) UpdateFeed(ctx context.Context, id int, upd dq.FeedUpdate)
 			prisma.Feed.Domain.SetIfPresent(upd.Domain),
 		).
 		Exec(ctx)
-	if err == sql.ErrNoRows {
+	if err == prisma.ErrNotFound {
 		err = dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Feed")
 	}
 	if err != nil {

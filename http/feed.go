@@ -12,7 +12,7 @@ import (
 )
 
 func (s *Server) registerFeedRoutes(r chi.Router) {
-	r.Post("/feed", s.handleCreateFeed)
+	r.Post("/feeds", s.handleCreateFeed)
 }
 
 type createFeedRequest struct {

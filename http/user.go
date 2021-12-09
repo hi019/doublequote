@@ -101,7 +101,7 @@ func (s *Server) handleEmailVerification(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Validate JWT.
+	// Validate JWT
 	data, err := s.CryptoService.VerifyToken(req.Token)
 	if err != nil {
 		Error(w, r, dq.Errorf(dq.EINVALID, dq.ErrInvalidJSONBody))
