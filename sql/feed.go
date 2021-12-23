@@ -39,7 +39,7 @@ func (s *FeedService) FindFeeds(ctx context.Context, filter dq.FeedFilter, inclu
 		prisma.Feed.Name.EqualsIfPresent(filter.Name),
 		prisma.Feed.Domain.EqualsIfPresent(filter.Domain),
 		prisma.Feed.RssURL.EqualsIfPresent(filter.RssURL),
-		prisma.Feed.Collections.Every(
+		prisma.Feed.Collections.Some(
 			prisma.Collection.ID.EqualsIfPresent(filter.CollectionID),
 		),
 	).

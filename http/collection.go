@@ -95,12 +95,14 @@ func (s *Server) handleListCollections(w http.ResponseWriter, r *http.Request) {
 	sendJSON(w, r, res)
 }
 
+type feedResponse struct {
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Domain string `json:"domain"`
+}
+
 type getCollectionFeedsResponse struct {
-	Feeds []struct {
-		ID     int    `json:"id"`
-		Name   string `json:"name"`
-		Domain string `json:"domain"`
-	} `json:"feeds"`
+	Feeds []feedResponse `json:"feeds"`
 }
 
 func (s *Server) handleGetCollectionFeeds(w http.ResponseWriter, r *http.Request) {
@@ -123,19 +125,16 @@ func (s *Server) handleGetCollectionFeeds(w http.ResponseWriter, r *http.Request
 		CollectionID: utils.IntPtr(colID),
 		Limit:        500,
 	}
-	feeds, _, err := s.FeedService.FindFeeds(r.Context(), filter, dq.FeedInclude{})
+	feeds, _, err := s.FeedService.FindFeeds(r.Context(), filter, dq.FeedInclude{Collections: true})
 	if err != nil {
 		Error(w, r, err)
 		return
 	}
 
 	var res getCollectionFeedsResponse
+	res.Feeds = []feedResponse{}
 	for _, feed := range feeds {
-		s := struct {
-			ID     int    `json:"id"`
-			Name   string `json:"name"`
-			Domain string `json:"domain"`
-		}{
+		s := feedResponse{
 			ID:     feed.ID,
 			Name:   feed.Name,
 			Domain: feed.Domain,

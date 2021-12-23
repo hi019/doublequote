@@ -86,39 +86,38 @@ func (s *CollectionService) CreateCollection(ctx context.Context, col *dq.Collec
 
 func (s *CollectionService) UpdateCollection(ctx context.Context, id int, upd dq.CollectionUpdate) (c *dq.Collection, err error) {
 	// TODO https://github.com/prisma/prisma-client-go/issues/699
-	//dbU, err := s.sql.prisma.Collection.FindUnique(prisma.Collection.ID.Equals(id)).
-	//	Update(
-	//		prisma.Collection.Name.SetIfPresent(upd.Name),
-	//		prisma.Collection.UserID.SetIfPresent(upd.UserID),
-	//		prisma.Collection.Feeds.Link(prisma.Feed.ID.InIfPresent(upd.FeedsIDs)),
-	//	).
-	//	Exec(ctx)
 	var dbU *prisma.CollectionModel
 
-	// TODO
-	_, err = s.sql.prisma.Collection.
-		FindUnique(prisma.Collection.ID.Equals(id)).
-		Update(prisma.Collection.Feeds.Unlink(prisma.Feed.ID.Gt(0))).Exec(ctx)
+	// Update Collection attributes
+	dbU, err = s.sql.prisma.Collection.FindUnique(prisma.Collection.ID.Equals(id)).
+		Update(
+			prisma.Collection.Name.SetIfPresent(upd.Name),
+			prisma.Collection.UserID.SetIfPresent(upd.UserID),
+		).
+		Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, id := range upd.FeedsIDs {
+	// Unlink Feeds from Collection
+	_, err = s.sql.prisma.Prisma.ExecuteRaw(`DELETE FROM _CollectionToFeed WHERE A = ?`, id).Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Link specified Feeds to the Collection
+	for _, fID := range upd.FeedsIDs {
 		dbU, err = s.sql.prisma.Collection.FindUnique(prisma.Collection.ID.Equals(id)).
 			Update(
-				prisma.Collection.Name.SetIfPresent(upd.Name),
-				prisma.Collection.UserID.SetIfPresent(upd.UserID),
-				prisma.Collection.Feeds.Link(prisma.Feed.ID.Equals(id)),
+				prisma.Collection.Feeds.Link(prisma.Feed.ID.Equals(fID)),
 			).
 			Exec(ctx)
-
 		if err == prisma.ErrNotFound {
 			err = dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Collection")
 		}
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	if len(upd.FeedsIDs) == 0 {
-		return nil, nil
 	}
 
 	return sqlColToDQCol(dbU), nil

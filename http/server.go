@@ -65,6 +65,7 @@ func NewServer() *Server {
 
 		s.registerUserRoutes(r)
 		s.registerCollectionRoutes(r)
+		s.registerFeedRoutes(r)
 	})
 
 	s.router.Route("/", func(r chi.Router) {

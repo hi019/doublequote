@@ -6,3 +6,4 @@ doublequote
 assets/frontend/*
 !assets/frontend/.gitkeep
 dist/
+.stuff
