@@ -1,12 +1,9 @@
 package sql
 
 import (
-	"context"
 	"os"
 	"testing"
-	"time"
 
-	"doublequote/prisma"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,14 +26,14 @@ func TestOpenCloseDB(t *testing.T) {
 
 // NewTestDB returns a sql instance with a mock Prisma client, and other utilities for testing.
 // Closing the connection is not needed.
-func NewTestDB() (*SQL, *prisma.PrismaClient, *prisma.Mock, func(t *testing.T)) {
-	client, mock, ensure := prisma.NewMock()
+// func NewTestDB() (*SQL, *prisma.PrismaClient, *prisma.Mock, func(t *testing.T)) {
+// 	client, mock, ensure := prisma.NewMock()
 
-	db := &SQL{
-		prisma: client,
-		Now:    time.Now,
-	}
-	db.ctx, db.cancel = context.WithCancel(context.Background())
+// 	db := &SQL{
+// 		prisma: client,
+// 		Now:    time.Now,
+// 	}
+// 	db.ctx, db.cancel = context.WithCancel(context.Background())
 
-	return db, client, mock, ensure
-}
+// 	return db, client, mock, ensure
+// }

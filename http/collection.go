@@ -8,6 +8,7 @@ import (
 
 	dq "doublequote"
 	"doublequote/utils"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/gobuffalo/validate"
 	"github.com/gobuffalo/validate/validators"
@@ -175,7 +176,7 @@ func (s *Server) handlePutCollectionFeeds(w http.ResponseWriter, r *http.Request
 	}
 
 	// Update collection
-	_, err = s.CollectionService.UpdateCollection(r.Context(), colID, dq.CollectionUpdate{FeedsIDs: req.Feeds})
+	_, err = s.CollectionService.UpdateCollection(r.Context(), colID, dq.CollectionUpdate{FeedsIDs: &req.Feeds})
 	if err != nil {
 		Error(w, r, err)
 		return

@@ -77,8 +77,12 @@ func (s *FeedService) CreateFeed(ctx context.Context, feed *dq.Feed) (*dq.Feed, 
 		SetDomain(feed.Domain).
 		SetRssURL(feed.RssURL).
 		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	return sqlFeedToFeed(f), err
+	// TODO access f.User.ID without another query?
+	return s.FindFeedByID(ctx, f.ID, dq.FeedInclude{})
 }
 
 func (s *FeedService) UpdateFeed(ctx context.Context, id int, upd dq.FeedUpdate) (*dq.Feed, error) {

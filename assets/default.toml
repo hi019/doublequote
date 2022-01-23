@@ -9,7 +9,7 @@ require_email_verification = false
 secret = "CHANGE-ME"
 
 [database]
-url = "file:./data.db"
+url = "file:./data.sqlite"
 
 [redis]
 url = "localhost:6379"

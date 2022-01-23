@@ -8,6 +8,7 @@ import (
 
 	dq "doublequote"
 	"doublequote/utils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -175,7 +176,7 @@ func TestServer_handlePutCollectionFeeds(t *testing.T) {
 			Return(&dq.Collection{}, nil)
 
 		s.CollectionService.
-			On("UpdateCollection", mock.Anything, 1, dq.CollectionUpdate{FeedsIDs: []int{1, 2}}).
+			On("UpdateCollection", mock.Anything, 1, dq.CollectionUpdate{FeedsIDs: &[]int{1, 2}}).
 			Return(&dq.Collection{}, nil)
 
 		// Setup request

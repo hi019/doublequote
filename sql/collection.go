@@ -75,8 +75,12 @@ func (s *CollectionService) CreateCollection(ctx context.Context, col *dq.Collec
 		SetName(col.Name).
 		SetUserID(col.UserID).
 		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	return sqlColToDQCol(c), err
+	// TODO access c.User.ID without another query?
+	return s.FindCollectionByID(ctx, c.ID, dq.CollectionInclude{})
 }
 
 func (s *CollectionService) UpdateCollection(ctx context.Context, id int, upd dq.CollectionUpdate) (c *dq.Collection, err error) {
@@ -89,12 +93,16 @@ func (s *CollectionService) UpdateCollection(ctx context.Context, id int, upd dq
 		q.SetUserID(*upd.UserID)
 	}
 	if upd.FeedsIDs != nil {
-		// TODO feeds
+		q.ClearFeeds().AddFeedIDs(*upd.FeedsIDs...)
 	}
 
 	u, err := q.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	return sqlColToDQCol(u), nil
+	// TODO access s.User.ID without another query?
+	return s.FindCollectionByID(ctx, u.ID, dq.CollectionInclude{})
 }
 
 func (s *CollectionService) DeleteCollection(ctx context.Context, id int) error {
