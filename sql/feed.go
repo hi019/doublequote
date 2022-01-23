@@ -4,7 +4,9 @@ import (
 	"context"
 
 	dq "doublequote"
-	"doublequote/prisma"
+	"doublequote/ent"
+	"doublequote/ent/collection"
+	"doublequote/ent/feed"
 )
 
 // Ensure service implements interface.
@@ -19,81 +21,83 @@ func NewFeedService(sql *SQL) *FeedService {
 }
 
 func (s *FeedService) FindFeedByID(ctx context.Context, id int, include dq.FeedInclude) (*dq.Feed, error) {
-	col, err := s.sql.prisma.Feed.
-		FindFirst(prisma.Feed.ID.Equals(id)).
-		With(buildFeedInclude(include)...).
-		Exec(ctx)
-	if err == prisma.ErrNotFound {
+	feed, err := s.sql.client.Feed.Query().
+		With(withFeedInclude(include)).
+		Where(feed.IDEQ(id)).
+		Only(ctx)
+	if ent.IsNotFound(err) {
 		return nil, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Feed")
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	return sqlFeedToFeed(col), err
+	return sqlFeedToFeed(feed), err
 }
 
 func (s *FeedService) FindFeeds(ctx context.Context, filter dq.FeedFilter, include dq.FeedInclude) ([]*dq.Feed, int, error) {
-	cols, err := s.sql.prisma.Feed.FindMany(
-		prisma.Feed.ID.EqualsIfPresent(filter.ID),
-		prisma.Feed.Name.EqualsIfPresent(filter.Name),
-		prisma.Feed.Domain.EqualsIfPresent(filter.Domain),
-		prisma.Feed.RssURL.EqualsIfPresent(filter.RssURL),
-		prisma.Feed.Collections.Some(
-			prisma.Collection.ID.EqualsIfPresent(filter.CollectionID),
-		),
-	).
-		With(buildFeedInclude(include)...).
-		Skip(filter.Offset).
-		Take(filter.Limit).
-		Exec(ctx)
+	feeds, err := s.sql.client.Feed.Query().
+		Where(
+			ifPresent(feed.IDEQ, filter.ID),
+			ifPresent(feed.NameEQ, filter.Name),
+			ifPresent(feed.DomainEQ, filter.Domain),
+			ifPresent(feed.RssURLEQ, filter.RssURL),
+			feed.HasCollectionsWith(ifPresent(collection.IDEQ, filter.CollectionID)),
+		).
+		With(withFeedInclude(include)).
+		Offset(filter.Offset).
+		Limit(filter.Limit).
+		All(ctx)
 
-	// TODO implement Count when available https://github.com/prisma/prisma-client-go/issues/229
-
-	return sqlFeedSliceToFeedSlice(cols), len(cols), err
+	return sqlFeedSliceToFeedSlice(feeds), len(feeds), err
 }
 
 func (s *FeedService) FindFeed(ctx context.Context, filter dq.FeedFilter, include dq.FeedInclude) (*dq.Feed, error) {
-	c, err := s.sql.prisma.Feed.FindFirst(
-		prisma.Feed.ID.EqualsIfPresent(filter.ID),
-		prisma.Feed.Name.EqualsIfPresent(filter.Name),
-		prisma.Feed.RssURL.EqualsIfPresent(filter.RssURL),
-		prisma.Feed.Domain.EqualsIfPresent(filter.Domain),
-		prisma.Feed.Collections.Every(
-			prisma.Collection.ID.EqualsIfPresent(filter.CollectionID),
-		),
-	).
-		With(buildFeedInclude(include)...).
-		Exec(ctx)
+	f, err := s.sql.client.Feed.Query().
+		Where(
+			ifPresent(feed.IDEQ, filter.ID),
+			ifPresent(feed.NameEQ, filter.Name),
+			ifPresent(feed.RssURLEQ, filter.RssURL),
+			ifPresent(feed.DomainEQ, filter.Domain),
+			feed.HasCollectionsWith(ifPresent(collection.IDEQ, filter.CollectionID)),
+		).
+		With(withFeedInclude(include)).
+		First(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return sqlFeedToFeed(c), err
+	return sqlFeedToFeed(f), err
 }
 
 func (s *FeedService) CreateFeed(ctx context.Context, feed *dq.Feed) (*dq.Feed, error) {
-	c, err := s.sql.prisma.Feed.CreateOne(
-		prisma.Feed.Name.Set(feed.Name),
-		prisma.Feed.RssURL.Set(feed.RssURL),
-		prisma.Feed.Domain.Set(feed.Domain),
-	).
-		Exec(ctx)
+	f, err := s.sql.client.Feed.Create().
+		SetName(feed.Name).
+		SetDomain(feed.Domain).
+		SetRssURL(feed.RssURL).
+		Save(ctx)
 
-	return sqlFeedToFeed(c), err
+	return sqlFeedToFeed(f), err
 }
 
 func (s *FeedService) UpdateFeed(ctx context.Context, id int, upd dq.FeedUpdate) (*dq.Feed, error) {
-	dbU, err := s.sql.prisma.Feed.FindUnique(prisma.Feed.ID.Equals(id)).
-		Update(
-			prisma.Feed.Name.SetIfPresent(upd.Name),
-			prisma.Feed.RssURL.SetIfPresent(upd.RssURL),
-			prisma.Feed.Domain.SetIfPresent(upd.Domain),
-		).
-		Exec(ctx)
-	if err == prisma.ErrNotFound {
-		err = dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Feed")
+	q := s.sql.client.Feed.UpdateOneID(id)
+
+	if upd.Name != nil {
+		q.SetName(*upd.Name)
+	}
+	if upd.RssURL != nil {
+		q.SetRssURL(*upd.RssURL)
+	}
+	if upd.Domain != nil {
+		q.SetDomain(*upd.Domain)
+	}
+
+	dbU, err := q.Save(ctx)
+
+	if ent.IsNotFound(err) {
+		return nil, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Feed")
 	}
 	if err != nil {
 		return nil, err
@@ -103,13 +107,10 @@ func (s *FeedService) UpdateFeed(ctx context.Context, id int, upd dq.FeedUpdate)
 }
 
 func (s *FeedService) DeleteFeed(ctx context.Context, id int) error {
-	_, err := s.sql.prisma.Feed.FindUnique(prisma.Feed.ID.Equals(id)).
-		Delete().
-		Exec(ctx)
-	return err
+	return s.sql.client.Feed.DeleteOneID(id).Exec(ctx)
 }
 
-func sqlFeedToFeed(c *prisma.FeedModel) *dq.Feed {
+func sqlFeedToFeed(c *ent.Feed) *dq.Feed {
 	f := &dq.Feed{
 		ID:        c.ID,
 		Name:      c.Name,
@@ -119,27 +120,27 @@ func sqlFeedToFeed(c *prisma.FeedModel) *dq.Feed {
 		UpdatedAt: c.UpdatedAt,
 	}
 
-	if c.RelationsFeed.Collections != nil {
-		for _, c := range c.Collections() {
-			f.Collections = append(f.Collections, sqlColToDQCol(&c))
+	if cs, err := c.Edges.CollectionsOrErr(); err != nil {
+		for _, c := range cs {
+			f.Collections = append(f.Collections, sqlColToDQCol(c))
 		}
 	}
 
 	return f
 }
 
-func sqlFeedSliceToFeedSlice(cs []prisma.FeedModel) (out []*dq.Feed) {
+func sqlFeedSliceToFeedSlice(cs []*ent.Feed) (out []*dq.Feed) {
 	for _, u := range cs {
-		out = append(out, sqlFeedToFeed(&u))
+		out = append(out, sqlFeedToFeed(u))
 	}
 
 	return
 }
 
-func buildFeedInclude(include dq.FeedInclude) (filters []prisma.IFeedRelationWith) {
-	if include.Collections {
-		filters = append(filters, prisma.Feed.Collections.Fetch())
+func withFeedInclude(include dq.FeedInclude) func(q *ent.FeedQuery) {
+	return func(q *ent.FeedQuery) {
+		if include.Collections {
+			q.WithCollections()
+		}
 	}
-
-	return
 }

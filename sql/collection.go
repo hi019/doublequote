@@ -4,7 +4,9 @@ import (
 	"context"
 
 	dq "doublequote"
-	"doublequote/prisma"
+	"doublequote/ent"
+	"doublequote/ent/collection"
+	"doublequote/ent/user"
 )
 
 // Ensure service implements interface.
@@ -19,47 +21,46 @@ func NewCollectionService(sql *SQL) *CollectionService {
 }
 
 func (s *CollectionService) FindCollectionByID(ctx context.Context, id int, include dq.CollectionInclude) (*dq.Collection, error) {
-	q, err := s.sql.prisma.Collection.
-		FindFirst(prisma.Collection.ID.Equals(id)).
-		With(
-			buildCollectionInclude(include)...,
-		).
-		Exec(ctx)
-	if err == prisma.ErrNotFound {
+	c, err := s.sql.client.Collection.
+		Query().
+		With(withCollectionInclude(include)).
+		Where(collection.IDEQ(id)).
+		Only(ctx)
+	if ent.IsNotFound(err) {
 		return nil, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Collection")
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	return sqlColToDQCol(q), err
+	return sqlColToDQCol(c), err
 }
 
 func (s *CollectionService) FindCollections(ctx context.Context, filter dq.CollectionFilter, include dq.CollectionInclude) ([]*dq.Collection, int, error) {
-	cols, err := s.sql.prisma.Collection.FindMany(
-		prisma.Collection.ID.EqualsIfPresent(filter.ID),
-		prisma.Collection.Name.EqualsIfPresent(filter.Name),
-		prisma.Collection.UserID.EqualsIfPresent(filter.UserID),
-	).
-		With(buildCollectionInclude(include)...).
-		Skip(filter.Offset).
-		Take(filter.Limit).
-		Exec(ctx)
-
-	// TODO implement Count when available https://github.com/prisma/prisma-client-go/issues/229
+	cols, err := s.sql.client.Collection.Query().
+		Where(
+			ifPresent(collection.IDEQ, filter.ID),
+			ifPresent(collection.NameEQ, filter.Name),
+			ifPresent(collection.IDEQ, filter.UserID),
+		).
+		With(withCollectionInclude(include)).
+		Limit(filter.Limit).
+		Offset(filter.Offset).
+		All(ctx)
 
 	return sqlColSliceToDQColSlice(cols), len(cols), err
 }
 
 func (s *CollectionService) FindCollection(ctx context.Context, filter dq.CollectionFilter, include dq.CollectionInclude) (*dq.Collection, error) {
-	c, err := s.sql.prisma.Collection.FindFirst(
-		prisma.Collection.ID.EqualsIfPresent(filter.ID),
-		prisma.Collection.Name.EqualsIfPresent(filter.Name),
-	).
-		With(buildCollectionInclude(include)...).
-		Exec(ctx)
+	c, err := s.sql.client.Collection.Query().
+		Where(
+			ifPresent(collection.IDEQ, filter.ID),
+			ifPresent(collection.NameEQ, filter.Name),
+			collection.HasUserWith(ifPresent(user.IDEQ, filter.UserID)),
+		).
+		First(ctx)
 
-	if err == prisma.ErrNotFound {
+	if ent.IsNotFound(err) {
 		return nil, dq.Errorf(dq.ENOTFOUND, "Collection not found.")
 	}
 	if err != nil {
@@ -70,100 +71,66 @@ func (s *CollectionService) FindCollection(ctx context.Context, filter dq.Collec
 }
 
 func (s *CollectionService) CreateCollection(ctx context.Context, col *dq.Collection) (*dq.Collection, error) {
-	c, err := s.sql.prisma.Collection.CreateOne(
-		prisma.Collection.Name.Set(col.Name),
-		prisma.Collection.User.Link(
-			prisma.User.ID.Equals(col.UserID),
-		),
-	).
-		With(
-			prisma.Collection.User.Fetch(),
-		).
-		Exec(ctx)
+	c, err := s.sql.client.Collection.Create().
+		SetName(col.Name).
+		SetUserID(col.UserID).
+		Save(ctx)
 
 	return sqlColToDQCol(c), err
 }
 
 func (s *CollectionService) UpdateCollection(ctx context.Context, id int, upd dq.CollectionUpdate) (c *dq.Collection, err error) {
-	// TODO https://github.com/prisma/prisma-client-go/issues/699
-	var dbU *prisma.CollectionModel
+	q := s.sql.client.Collection.UpdateOneID(id)
 
-	// Update Collection attributes
-	dbU, err = s.sql.prisma.Collection.FindUnique(prisma.Collection.ID.Equals(id)).
-		Update(
-			prisma.Collection.Name.SetIfPresent(upd.Name),
-			prisma.Collection.UserID.SetIfPresent(upd.UserID),
-		).
-		Exec(ctx)
-	if err != nil {
-		return nil, err
+	if upd.Name != nil {
+		q.SetName(*upd.Name)
+	}
+	if upd.UserID != nil {
+		q.SetUserID(*upd.UserID)
+	}
+	if upd.FeedsIDs != nil {
+		// TODO feeds
 	}
 
-	// Unlink Feeds from Collection
-	_, err = s.sql.prisma.Prisma.ExecuteRaw(`DELETE FROM _CollectionToFeed WHERE A = ?`, id).Exec(ctx)
-	if err != nil {
-		return nil, err
-	}
+	u, err := q.Save(ctx)
 
-	// Link specified Feeds to the Collection
-	for _, fID := range upd.FeedsIDs {
-		dbU, err = s.sql.prisma.Collection.FindUnique(prisma.Collection.ID.Equals(id)).
-			Update(
-				prisma.Collection.Feeds.Link(prisma.Feed.ID.Equals(fID)),
-			).
-			Exec(ctx)
-		if err == prisma.ErrNotFound {
-			err = dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Collection")
-		}
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return sqlColToDQCol(dbU), nil
+	return sqlColToDQCol(u), nil
 }
 
 func (s *CollectionService) DeleteCollection(ctx context.Context, id int) error {
-	_, err := s.sql.prisma.Collection.FindUnique(prisma.Collection.ID.Equals(id)).
-		Delete().
-		Exec(ctx)
-	return err
+	return s.sql.client.Collection.DeleteOneID(id).Exec(ctx)
 }
 
-func sqlColToDQCol(c *prisma.CollectionModel) *dq.Collection {
+func sqlColToDQCol(c *ent.Collection) *dq.Collection {
 	n := &dq.Collection{
 		ID:        c.ID,
 		Name:      c.Name,
-		UserID:    c.UserID,
+		UserID:    c.Edges.User.ID,
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
 	}
 
-	if c.RelationsCollection.User != nil {
-		n.User = *sqlUserToDQUser(c.User())
-	}
-
-	if c.RelationsCollection.Feeds != nil {
-		n.Feeds = sqlFeedSliceToFeedSlice(c.Feeds())
+	if u, err := c.Edges.UserOrErr(); err != nil {
+		n.User = *sqlUserToDQUser(u)
 	}
 
 	return n
 }
 
-func sqlColSliceToDQColSlice(cs []prisma.CollectionModel) (out []*dq.Collection) {
+func sqlColSliceToDQColSlice(cs []*ent.Collection) (out []*dq.Collection) {
 	for _, u := range cs {
-		out = append(out, sqlColToDQCol(&u))
+		out = append(out, sqlColToDQCol(u))
 	}
 
 	return
 }
 
-func buildCollectionInclude(include dq.CollectionInclude) (filters []prisma.ICollectionRelationWith) {
-	filters = append(filters, prisma.Collection.User.Fetch())
+func withCollectionInclude(include dq.CollectionInclude) func(q *ent.CollectionQuery) {
+	return func(q *ent.CollectionQuery) {
+		q.WithUser()
 
-	if include.Feeds {
-		filters = append(filters, prisma.Collection.Feeds.Fetch())
+		if include.Feeds {
+			q.WithFeeds()
+		}
 	}
-
-	return
 }

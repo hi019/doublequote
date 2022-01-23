@@ -45,7 +45,7 @@ type CollectionFilter struct {
 type CollectionUpdate struct {
 	Name     *string
 	UserID   *int
-	FeedsIDs []int
+	FeedsIDs *[]int
 }
 
 type CollectionInclude struct {

@@ -3,8 +3,9 @@ package sql
 import (
 	"context"
 
-	"doublequote"
-	"doublequote/prisma"
+	dq "doublequote"
+	"doublequote/ent"
+	"doublequote/ent/user"
 )
 
 // Ensure service implements interface.
@@ -27,13 +28,13 @@ func NewUserService(db *SQL, es dq.EventService, cr dq.CryptoService) *UserServi
 }
 
 func (s *UserService) FindUserByID(ctx context.Context, id int, include dq.UserInclude) (*dq.User, error) {
-	q := s.sql.prisma.
-		User.
-		FindFirst(prisma.User.ID.Equals(id)).
-		With(buildUserInclude(include)...)
+	dbU, err := s.sql.client.User.
+		Query().
+		With(withUserInclude(include)).
+		Where(user.IDEQ(id)).
+		Only(ctx)
 
-	dbU, err := q.Exec(ctx)
-	if err == prisma.ErrNotFound {
+	if ent.IsNotFound(err) {
 		return nil, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "User")
 	}
 	if err != nil {
@@ -45,30 +46,24 @@ func (s *UserService) FindUserByID(ctx context.Context, id int, include dq.UserI
 }
 
 func (s *UserService) FindUsers(ctx context.Context, filter dq.UserFilter, include dq.UserInclude) ([]*dq.User, int, error) {
-	u, err := s.sql.prisma.User.FindMany(
-		prisma.User.ID.EqualsIfPresent(filter.ID),
-		prisma.User.Email.EqualsIfPresent(filter.Email),
-	).
-		With(buildUserInclude(include)...).
-		Skip(filter.Offset).
-		Take(filter.Limit).
-		Exec(ctx)
-
-	// TODO implement Count when available https://github.com/prisma/prisma-client-go/issues/229
+	u, err := s.sql.client.User.Query().
+		With(withUserInclude(include)).
+		Where(ifPresent(user.IDEQ, filter.ID), ifPresent(user.EmailEQ, filter.Email)).
+		Limit(filter.Limit).
+		Offset(filter.Offset).
+		All(ctx)
 
 	return sqlUserSliceToDQUserSlice(u), len(u), err
 }
 
 func (s *UserService) FindUser(ctx context.Context, filter dq.UserFilter, include dq.UserInclude) (*dq.User, error) {
-	u, err := s.sql.prisma.User.FindFirst(
-		prisma.User.ID.EqualsIfPresent(filter.ID),
-		prisma.User.Email.EqualsIfPresent(filter.Email),
-	).
-		With(buildUserInclude(include)...).
-		Exec(ctx)
+	u, err := s.sql.client.User.Query().
+		With(withUserInclude(include)).
+		Where(ifPresent(user.IDEQ, filter.ID), ifPresent(user.EmailEQ, filter.Email)).
+		Only(ctx)
 
-	if err == prisma.ErrNotFound {
-		return nil, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Collection")
+	if ent.IsNotFound(err) {
+		return nil, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "User")
 	}
 	if err != nil {
 		return nil, err
@@ -83,10 +78,11 @@ func (s *UserService) CreateUser(ctx context.Context, u *dq.User) (*dq.User, err
 		return nil, err
 	}
 
-	dbU, err := s.sql.prisma.User.CreateOne(
-		prisma.User.Email.Set(u.Email),
-		prisma.User.Password.Set(hash),
-	).Exec(ctx)
+	dbU, err := s.sql.client.User.
+		Create().
+		SetEmail(u.Email).
+		SetPassword(hash).
+		Save(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -102,32 +98,36 @@ func (s *UserService) CreateUser(ctx context.Context, u *dq.User) (*dq.User, err
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, id int, upd dq.UserUpdate) (*dq.User, error) {
-	dbU, err := s.sql.prisma.User.FindUnique(prisma.User.ID.Equals(id)).
-		Update(
-			prisma.User.Email.SetIfPresent(upd.Email),
-			prisma.User.Password.SetIfPresent(upd.Password),
-			prisma.User.EmailVerifiedAt.SetIfPresent(upd.EmailVerifiedAt),
-		).
-		Exec(ctx)
-	if err == prisma.ErrNotFound {
+	q := s.sql.client.User.Update().
+		Where(user.IDEQ(id))
+	if upd.Email != nil {
+		q.SetEmail(*upd.Email)
+	}
+	if upd.Password != nil {
+		q.SetPassword(*upd.Password)
+	}
+	if upd.EmailVerifiedAt != nil {
+		q.SetEmailVerifiedAt(*upd.EmailVerifiedAt)
+	}
+
+	_, err := q.Save(ctx)
+	if ent.IsNotFound(err) {
 		return nil, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "User")
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	return sqlUserToDQUser(dbU), err
+	// Refetch user
+	return s.FindUserByID(ctx, id, dq.UserInclude{})
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, id int) error {
-	_, err := s.sql.prisma.User.FindUnique(prisma.User.ID.Equals(id)).
-		Delete().
-		Exec(ctx)
-	return err
+	return s.sql.client.User.DeleteOneID(id).Exec(ctx)
 }
 
-func sqlUserToDQUser(u *prisma.UserModel) *dq.User {
-	verifiedAt, _ := u.EmailVerifiedAt()
+func sqlUserToDQUser(u *ent.User) *dq.User {
+	verifiedAt := u.EmailVerifiedAt
 	n := &dq.User{
 		ID:              u.ID,
 		Email:           u.Email,
@@ -137,25 +137,21 @@ func sqlUserToDQUser(u *prisma.UserModel) *dq.User {
 		UpdatedAt:       u.UpdatedAt,
 	}
 
-	if u.RelationsUser.Collections != nil {
-		n.Collections = sqlColSliceToDQColSlice(u.Collections())
-	}
-
 	return n
 }
 
-func sqlUserSliceToDQUserSlice(us []prisma.UserModel) (out []*dq.User) {
+func sqlUserSliceToDQUserSlice(us ent.Users) (out []*dq.User) {
 	for _, u := range us {
-		out = append(out, sqlUserToDQUser(&u))
+		out = append(out, sqlUserToDQUser(u))
 	}
 
 	return out
 }
 
-func buildUserInclude(include dq.UserInclude) (filters []prisma.IUserRelationWith) {
-	if include.Collections {
-		filters = append(filters, prisma.User.Collections.Fetch())
+func withUserInclude(include dq.UserInclude) func(q *ent.UserQuery) {
+	return func(q *ent.UserQuery) {
+		if include.Collections {
+			q.WithCollections()
+		}
 	}
-
-	return
 }

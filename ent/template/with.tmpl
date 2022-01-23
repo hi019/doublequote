@@ -1,0 +1,16 @@
+{{/* gotype: entgo.io/ent/entc/gen.Graph */}}
+
+{{ define "with" }}
+
+    {{ $pkg := base $.Config.Package }}
+    {{ template "header" $ }}
+
+    {{ range $n := $.Nodes }}
+        {{ $receiver := $n.Receiver }}
+        func ({{ $receiver }} *{{ $n.QueryName }}) With(wf func(q *{{$n.QueryName}})) *{{ $n.QueryName }} {
+        wf({{ $receiver }})
+        return {{ $receiver }}
+        }
+    {{ end }}
+
+{{ end }}
