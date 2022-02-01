@@ -9,6 +9,9 @@ import (
 // Collection is the predicate function for collection builders.
 type Collection func(*sql.Selector)
 
+// Entry is the predicate function for entry builders.
+type Entry func(*sql.Selector)
+
 // Feed is the predicate function for feed builders.
 type Feed func(*sql.Selector)
 

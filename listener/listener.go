@@ -12,8 +12,6 @@ type Service struct {
 	cfg           dq.Config
 }
 
-// NewService creates a new Listener service.
-// The caller is responsible for setting the dependencies.
 func NewService(eventService dq.EventService, emailService dq.EmailService, cryptoService dq.CryptoService, cfg dq.Config) *Service {
 	return &Service{
 		eventService:  eventService,

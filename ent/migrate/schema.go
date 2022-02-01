@@ -30,6 +30,31 @@ var (
 			},
 		},
 	}
+	// EntriesColumns holds the columns for the "entries" table.
+	EntriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "title", Type: field.TypeString},
+		{Name: "url", Type: field.TypeString},
+		{Name: "author", Type: field.TypeString},
+		{Name: "content_key", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "feed_entries", Type: field.TypeInt, Nullable: true},
+	}
+	// EntriesTable holds the schema information for the "entries" table.
+	EntriesTable = &schema.Table{
+		Name:       "entries",
+		Columns:    EntriesColumns,
+		PrimaryKey: []*schema.Column{EntriesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "entries_feeds_entries",
+				Columns:    []*schema.Column{EntriesColumns[7]},
+				RefColumns: []*schema.Column{FeedsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// FeedsColumns holds the columns for the "feeds" table.
 	FeedsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -88,6 +113,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		CollectionsTable,
+		EntriesTable,
 		FeedsTable,
 		UsersTable,
 		CollectionFeedsTable,
@@ -96,6 +122,7 @@ var (
 
 func init() {
 	CollectionsTable.ForeignKeys[0].RefTable = UsersTable
+	EntriesTable.ForeignKeys[0].RefTable = FeedsTable
 	CollectionFeedsTable.ForeignKeys[0].RefTable = CollectionsTable
 	CollectionFeedsTable.ForeignKeys[1].RefTable = FeedsTable
 }

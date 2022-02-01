@@ -21,7 +21,7 @@ func NewFeedService(sql *SQL) *FeedService {
 }
 
 func (s *FeedService) FindFeedByID(ctx context.Context, id int, include dq.FeedInclude) (*dq.Feed, error) {
-	feed, err := s.sql.client.Feed.Query().
+	f, err := s.sql.client.Feed.Query().
 		With(withFeedInclude(include)).
 		Where(feed.IDEQ(id)).
 		Only(ctx)
@@ -32,7 +32,7 @@ func (s *FeedService) FindFeedByID(ctx context.Context, id int, include dq.FeedI
 		return nil, err
 	}
 
-	return sqlFeedToFeed(feed), err
+	return sqlFeedToFeed(f), err
 }
 
 func (s *FeedService) FindFeeds(ctx context.Context, filter dq.FeedFilter, include dq.FeedInclude) ([]*dq.Feed, int, error) {

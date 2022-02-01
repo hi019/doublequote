@@ -3,6 +3,7 @@ package asynq
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	dq "doublequote"
 	"github.com/hibiken/asynq"
@@ -30,6 +31,15 @@ func NewEventService(redisUrl string) *EventService {
 
 	client := asynq.NewClient(asynq.RedisClientOpt{Addr: redisUrl})
 	s.client = client
+
+	scheduler := asynq.NewScheduler(
+		asynq.RedisClientOpt{Addr: redisUrl},
+		&asynq.SchedulerOpts{
+			Location: time.UTC,
+		},
+	)
+
+	scheduler.Register("a")
 
 	return &s
 }

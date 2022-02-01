@@ -9,8 +9,10 @@ package main
 import (
 	"doublequote"
 	"doublequote/asynq"
+	"doublequote/blob"
 	"doublequote/crypto"
 	"doublequote/http"
+	"doublequote/ingest"
 	"doublequote/redis"
 	"doublequote/sql"
 )
@@ -36,16 +38,26 @@ func initializeApplication(cfg *dq.Config) (*application, func(), error) {
 		return nil, nil, err
 	}
 	sessionService := redis.NewSessionService(cacheService)
-	collectionService := sql.NewCollectionService(sqlSQL)
-	feedService := setupFeedService(sqlSQL)
-	server, cleanup3, err := setupServer(cfg, userService, cryptoService, sessionService, collectionService, feedService)
+	entryService := setupEntryService(sqlSQL)
+	storageService, cleanup3, err := setupStorageService(cfg)
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	mainApplication := newApplication(userService, cryptoService, sessionService, server)
+	feedService := setupFeedService(sqlSQL)
+	ingestService := setupIngestService(feedService, entryService, storageService)
+	collectionService := sql.NewCollectionService(sqlSQL)
+	server, cleanup4, err := setupServer(cfg, userService, cryptoService, sessionService, storageService, ingestService, collectionService, feedService)
+	if err != nil {
+		cleanup3()
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	mainApplication := newApplication(userService, cryptoService, sessionService, entryService, storageService, server)
 	return mainApplication, func() {
+		cleanup4()
 		cleanup3()
 		cleanup2()
 		cleanup()
@@ -53,6 +65,18 @@ func initializeApplication(cfg *dq.Config) (*application, func(), error) {
 }
 
 // wire.go:
+
+type application struct {
+	userService       dq.UserService
+	cryptoService     dq.CryptoService
+	sessionService    dq.SessionService
+	collectionService dq.CollectionService
+	entryService      dq.EntryService
+	storageService    dq.StorageService
+	ingestService     dq.IngestService
+
+	httpServer *http.Server
+}
 
 func setupSQL(cfg *dq.Config) (*sql.SQL, func(), error) {
 	d := sql.NewSQL(cfg.Database.URL)
@@ -96,6 +120,8 @@ func setupServer(
 	userService dq.UserService,
 	cryptoService dq.CryptoService,
 	sessionService dq.SessionService,
+	storageService dq.StorageService,
+	ingestService dq.IngestService,
 	collectionService dq.CollectionService,
 	feedService dq.FeedService,
 ) (*http.Server, func(), error) {
@@ -106,6 +132,8 @@ func setupServer(
 	s.SessionService = sessionService
 	s.CollectionService = collectionService
 	s.FeedService = feedService
+	s.StorageService = storageService
+	s.IngestService = ingestService
 	s.Config = *cfg
 
 	err := s.Open()
@@ -124,16 +152,43 @@ func setupFeedService(
 	return sql.NewFeedService(s)
 }
 
+func setupEntryService(
+	s *sql.SQL,
+) dq.EntryService {
+	return sql.NewEntryService(s)
+}
+
+func setupIngestService(
+	feedService dq.FeedService,
+	entryService dq.EntryService,
+	storageService dq.StorageService,
+) dq.IngestService {
+	return ingest.NewService(feedService, entryService, storageService)
+}
+
+func setupStorageService(
+	cfg *dq.Config,
+) (dq.StorageService, func(), error) {
+	a, b, c := blob.NewStorageService(cfg.App.BucketName)
+	return a, func() {
+		b()
+	}, c
+}
+
 func newApplication(
 	userService dq.UserService,
 	cryptoService dq.CryptoService,
 	sessionService dq.SessionService,
+	entryService dq.EntryService,
+	storageService dq.StorageService,
 	server *http.Server,
 ) *application {
 	return &application{
-		userService:    &userService,
-		cryptoService:  &cryptoService,
-		sessionService: &sessionService,
+		userService:    userService,
+		cryptoService:  cryptoService,
+		sessionService: sessionService,
+		entryService:   entryService,
+		storageService: storageService,
 		httpServer:     server,
 	}
 }

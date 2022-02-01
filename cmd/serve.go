@@ -5,20 +5,11 @@ import (
 	"os"
 	"os/signal"
 
-	"doublequote"
-	"doublequote/http"
+	dq "doublequote"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-type application struct {
-	userService       *dq.UserService
-	cryptoService     *dq.CryptoService
-	sessionService    *dq.SessionService
-	collectionService *dq.CollectionService
-
-	httpServer *http.Server
-}
 
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{

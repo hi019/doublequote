@@ -8,3 +8,4 @@ assets/frontend/*
 dist/
 .stuff
 *.sqlite
+dqdata

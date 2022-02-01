@@ -10,8 +10,6 @@ import (
 	"doublequote/ent"
 
 	_ "doublequote/ent/entps"
-
-	_ "github.com/lib/pq"
 )
 
 // SQL represents the database connection

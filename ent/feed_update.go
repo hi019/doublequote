@@ -5,8 +5,10 @@ package ent
 import (
 	"context"
 	"doublequote/ent/collection"
+	"doublequote/ent/entry"
 	"doublequote/ent/feed"
 	"doublequote/ent/predicate"
+	"errors"
 	"fmt"
 	"time"
 
@@ -67,6 +69,21 @@ func (fu *FeedUpdate) AddCollections(c ...*Collection) *FeedUpdate {
 	return fu.AddCollectionIDs(ids...)
 }
 
+// AddEntryIDs adds the "entries" edge to the Entry entity by IDs.
+func (fu *FeedUpdate) AddEntryIDs(ids ...int) *FeedUpdate {
+	fu.mutation.AddEntryIDs(ids...)
+	return fu
+}
+
+// AddEntries adds the "entries" edges to the Entry entity.
+func (fu *FeedUpdate) AddEntries(e ...*Entry) *FeedUpdate {
+	ids := make([]int, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return fu.AddEntryIDs(ids...)
+}
+
 // Mutation returns the FeedMutation object of the builder.
 func (fu *FeedUpdate) Mutation() *FeedMutation {
 	return fu.mutation
@@ -91,6 +108,27 @@ func (fu *FeedUpdate) RemoveCollections(c ...*Collection) *FeedUpdate {
 		ids[i] = c[i].ID
 	}
 	return fu.RemoveCollectionIDs(ids...)
+}
+
+// ClearEntries clears all "entries" edges to the Entry entity.
+func (fu *FeedUpdate) ClearEntries() *FeedUpdate {
+	fu.mutation.ClearEntries()
+	return fu
+}
+
+// RemoveEntryIDs removes the "entries" edge to Entry entities by IDs.
+func (fu *FeedUpdate) RemoveEntryIDs(ids ...int) *FeedUpdate {
+	fu.mutation.RemoveEntryIDs(ids...)
+	return fu
+}
+
+// RemoveEntries removes "entries" edges to Entry entities.
+func (fu *FeedUpdate) RemoveEntries(e ...*Entry) *FeedUpdate {
+	ids := make([]int, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return fu.RemoveEntryIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -256,6 +294,60 @@ func (fu *FeedUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if fu.mutation.EntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   feed.EntriesTable,
+			Columns: []string{feed.EntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: entry.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := fu.mutation.RemovedEntriesIDs(); len(nodes) > 0 && !fu.mutation.EntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   feed.EntriesTable,
+			Columns: []string{feed.EntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: entry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := fu.mutation.EntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   feed.EntriesTable,
+			Columns: []string{feed.EntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: entry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, fu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{feed.Label}
@@ -314,6 +406,21 @@ func (fuo *FeedUpdateOne) AddCollections(c ...*Collection) *FeedUpdateOne {
 	return fuo.AddCollectionIDs(ids...)
 }
 
+// AddEntryIDs adds the "entries" edge to the Entry entity by IDs.
+func (fuo *FeedUpdateOne) AddEntryIDs(ids ...int) *FeedUpdateOne {
+	fuo.mutation.AddEntryIDs(ids...)
+	return fuo
+}
+
+// AddEntries adds the "entries" edges to the Entry entity.
+func (fuo *FeedUpdateOne) AddEntries(e ...*Entry) *FeedUpdateOne {
+	ids := make([]int, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return fuo.AddEntryIDs(ids...)
+}
+
 // Mutation returns the FeedMutation object of the builder.
 func (fuo *FeedUpdateOne) Mutation() *FeedMutation {
 	return fuo.mutation
@@ -338,6 +445,27 @@ func (fuo *FeedUpdateOne) RemoveCollections(c ...*Collection) *FeedUpdateOne {
 		ids[i] = c[i].ID
 	}
 	return fuo.RemoveCollectionIDs(ids...)
+}
+
+// ClearEntries clears all "entries" edges to the Entry entity.
+func (fuo *FeedUpdateOne) ClearEntries() *FeedUpdateOne {
+	fuo.mutation.ClearEntries()
+	return fuo
+}
+
+// RemoveEntryIDs removes the "entries" edge to Entry entities by IDs.
+func (fuo *FeedUpdateOne) RemoveEntryIDs(ids ...int) *FeedUpdateOne {
+	fuo.mutation.RemoveEntryIDs(ids...)
+	return fuo
+}
+
+// RemoveEntries removes "entries" edges to Entry entities.
+func (fuo *FeedUpdateOne) RemoveEntries(e ...*Entry) *FeedUpdateOne {
+	ids := make([]int, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return fuo.RemoveEntryIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -423,7 +551,7 @@ func (fuo *FeedUpdateOne) sqlSave(ctx context.Context) (_node *Feed, err error) 
 	}
 	id, ok := fuo.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Feed.ID for update")}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Feed.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
 	if fields := fuo.fields; len(fields) > 0 {
@@ -519,6 +647,60 @@ func (fuo *FeedUpdateOne) sqlSave(ctx context.Context) (_node *Feed, err error) 
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: collection.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if fuo.mutation.EntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   feed.EntriesTable,
+			Columns: []string{feed.EntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: entry.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := fuo.mutation.RemovedEntriesIDs(); len(nodes) > 0 && !fuo.mutation.EntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   feed.EntriesTable,
+			Columns: []string{feed.EntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: entry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := fuo.mutation.EntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   feed.EntriesTable,
+			Columns: []string{feed.EntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: entry.FieldID,
 				},
 			},
 		}

@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"doublequote/ent/collection"
+	"doublequote/ent/entry"
 	"doublequote/ent/feed"
 	"errors"
 	"fmt"
@@ -80,6 +81,21 @@ func (fc *FeedCreate) AddCollections(c ...*Collection) *FeedCreate {
 		ids[i] = c[i].ID
 	}
 	return fc.AddCollectionIDs(ids...)
+}
+
+// AddEntryIDs adds the "entries" edge to the Entry entity by IDs.
+func (fc *FeedCreate) AddEntryIDs(ids ...int) *FeedCreate {
+	fc.mutation.AddEntryIDs(ids...)
+	return fc
+}
+
+// AddEntries adds the "entries" edges to the Entry entity.
+func (fc *FeedCreate) AddEntries(e ...*Entry) *FeedCreate {
+	ids := make([]int, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return fc.AddEntryIDs(ids...)
 }
 
 // Mutation returns the FeedMutation object of the builder.
@@ -166,19 +182,19 @@ func (fc *FeedCreate) defaults() {
 // check runs all checks and user-defined validators on the builder.
 func (fc *FeedCreate) check() error {
 	if _, ok := fc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "name"`)}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Feed.name"`)}
 	}
 	if _, ok := fc.mutation.RssURL(); !ok {
-		return &ValidationError{Name: "rssURL", err: errors.New(`ent: missing required field "rssURL"`)}
+		return &ValidationError{Name: "rssURL", err: errors.New(`ent: missing required field "Feed.rssURL"`)}
 	}
 	if _, ok := fc.mutation.Domain(); !ok {
-		return &ValidationError{Name: "domain", err: errors.New(`ent: missing required field "domain"`)}
+		return &ValidationError{Name: "domain", err: errors.New(`ent: missing required field "Feed.domain"`)}
 	}
 	if _, ok := fc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "created_at"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Feed.created_at"`)}
 	}
 	if _, ok := fc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "updated_at"`)}
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Feed.updated_at"`)}
 	}
 	return nil
 }
@@ -258,6 +274,25 @@ func (fc *FeedCreate) createSpec() (*Feed, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: collection.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := fc.mutation.EntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   feed.EntriesTable,
+			Columns: []string{feed.EntriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: entry.FieldID,
 				},
 			},
 		}

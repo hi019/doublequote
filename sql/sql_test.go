@@ -1,28 +1,19 @@
 package sql
 
-import (
-	"os"
-	"testing"
+// func TestOpenCloseDB(t *testing.T) {
+// 	err := godotenv.Load("../.env.testing")
+// 	require.Nil(t, err)
 
-	"github.com/joho/godotenv"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
+// 	t.Run("OK", func(t *testing.T) {
+// 		db := NewSQL(os.Getenv("DATABASE_URL"))
 
-func TestOpenCloseDB(t *testing.T) {
-	err := godotenv.Load("../.env.testing")
-	require.Nil(t, err)
+// 		err := db.Open()
+// 		assert.Nil(t, err)
 
-	t.Run("OK", func(t *testing.T) {
-		db := NewSQL(os.Getenv("DATABASE_URL"))
-
-		err := db.Open()
-		assert.Nil(t, err)
-
-		err = db.Close()
-		assert.Nil(t, err)
-	})
-}
+// 		err = db.Close()
+// 		assert.Nil(t, err)
+// 	})
+// }
 
 // NewTestDB returns a sql instance with a mock Prisma client, and other utilities for testing.
 // Closing the connection is not needed.

@@ -7,12 +7,27 @@ package main
 import (
 	dq "doublequote"
 	"doublequote/asynq"
+	"doublequote/blob"
 	"doublequote/crypto"
 	"doublequote/http"
+	"doublequote/ingest"
 	"doublequote/redis"
 	"doublequote/sql"
+
 	"github.com/google/wire"
 )
+
+type application struct {
+	userService       dq.UserService
+	cryptoService     dq.CryptoService
+	sessionService    dq.SessionService
+	collectionService dq.CollectionService
+	entryService      dq.EntryService
+	storageService    dq.StorageService
+	ingestService     dq.IngestService
+
+	httpServer *http.Server
+}
 
 // Setup functions for services that require configuration.
 // This file is used by wire (https://github.com/google/wire) for dependency injection.
@@ -59,6 +74,8 @@ func setupServer(
 	userService dq.UserService,
 	cryptoService dq.CryptoService,
 	sessionService dq.SessionService,
+	storageService dq.StorageService,
+	ingestService dq.IngestService,
 	collectionService dq.CollectionService,
 	feedService dq.FeedService,
 ) (*http.Server, func(), error) {
@@ -69,6 +86,8 @@ func setupServer(
 	s.SessionService = sessionService
 	s.CollectionService = collectionService
 	s.FeedService = feedService
+	s.StorageService = storageService
+	s.IngestService = ingestService
 	s.Config = *cfg
 
 	err := s.Open()
@@ -87,16 +106,43 @@ func setupFeedService(
 	return sql.NewFeedService(s)
 }
 
+func setupEntryService(
+	s *sql.SQL,
+) dq.EntryService {
+	return sql.NewEntryService(s)
+}
+
+func setupIngestService(
+	feedService dq.FeedService,
+	entryService dq.EntryService,
+	storageService dq.StorageService,
+) dq.IngestService {
+	return ingest.NewService(feedService, entryService, storageService)
+}
+
+func setupStorageService(
+	cfg *dq.Config,
+) (dq.StorageService, func(), error) {
+	a, b, c := blob.NewStorageService(cfg.App.BucketName)
+	return a, func() {
+		b()
+	}, c
+}
+
 func newApplication(
 	userService dq.UserService,
 	cryptoService dq.CryptoService,
 	sessionService dq.SessionService,
+	entryService dq.EntryService,
+	storageService dq.StorageService,
 	server *http.Server,
 ) *application {
 	return &application{
-		userService:    &userService,
-		cryptoService:  &cryptoService,
-		sessionService: &sessionService,
+		userService:    userService,
+		cryptoService:  cryptoService,
+		sessionService: sessionService,
+		entryService:   entryService,
+		storageService: storageService,
 		httpServer:     server,
 	}
 }
@@ -110,6 +156,9 @@ func initializeApplication(cfg *dq.Config) (*application, func(), error) {
 		setupEventService,
 		setupCryptoService,
 		setupFeedService,
+		setupEntryService,
+		setupIngestService,
+		setupStorageService,
 
 		wire.Bind(new(dq.CacheService), new(*redis.CacheService)),
 		setupCache,

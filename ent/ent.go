@@ -4,6 +4,7 @@ package ent
 
 import (
 	"doublequote/ent/collection"
+	"doublequote/ent/entry"
 	"doublequote/ent/feed"
 	"doublequote/ent/user"
 	"errors"
@@ -32,6 +33,7 @@ type OrderFunc func(*sql.Selector)
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
 		collection.Table: collection.ValidColumn,
+		entry.Table:      entry.ValidColumn,
 		feed.Table:       feed.ValidColumn,
 		user.Table:       user.ValidColumn,
 	}
@@ -145,7 +147,7 @@ func Sum(field string) AggregateFunc {
 	}
 }
 
-// ValidationError returns when validating a field fails.
+// ValidationError returns when validating a field or edge fails.
 type ValidationError struct {
 	Name string // Field or edge name.
 	err  error

@@ -4,14 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	dq "doublequote"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/gobuffalo/validate"
 	"github.com/gobuffalo/validate/validators"
 )
 
 func (s *Server) registerFeedRoutes(r chi.Router) {
+	r.Post("/feeds/{feedID}/ingest", s.handleIngestFeed)
 	r.Post("/feeds", s.handleCreateFeed)
 }
 
@@ -83,6 +86,22 @@ func (s *Server) handleCreateFeed(w http.ResponseWriter, r *http.Request) {
 		RssURL: created.RssURL,
 		Domain: created.Domain,
 	})
+}
+
+func (s *Server) handleIngestFeed(w http.ResponseWriter, r *http.Request) {
+	feedID, err := strconv.Atoi(chi.URLParam(r, "feedID"))
+	if err != nil {
+		Error(w, r, err)
+		return
+	}
+
+	feed, err := s.FeedService.FindFeedByID(r.Context(), feedID, dq.FeedInclude{})
+	if err != nil {
+		Error(w, r, err)
+		return
+	}
+
+	err = s.IngestService.Ingest(*feed)
 }
 
 // TODO delete, update for feeds

@@ -34,5 +34,6 @@ func (Feed) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("collections", Collection.Type).
 			Ref("feeds"),
+		edge.To("entries", Entry.Type),
 	}
 }

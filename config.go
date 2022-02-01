@@ -6,15 +6,16 @@ import (
 
 type Config struct {
 	HTTP struct {
-		Port        string `toml:"port"`
-		Domain      string `toml:"domain"`
-		FrontendURL string `toml:"frontend_url"`
-	} `toml:"http"`
+		Port        string `mapstructure:"port"`
+		Domain      string `mapstructure:"domain"`
+		FrontendURL string `mapstructure:"frontend_url"`
+	} `mapstructure:"http"`
 
 	App struct {
-		Secret                   string `toml:"secret"`
-		RequireEmailVerification bool   `toml:"require_email_verification"`
-	}
+		Secret                   string `mapstructure:"secret"`
+		RequireEmailVerification bool   `mapstructure:"require_email_verification"`
+		BucketName               string `mapstructure:"bucket_name"`
+	} `mapstructure:"app"`
 
 	Database struct {
 		URL string `toml:"url"`

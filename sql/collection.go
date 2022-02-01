@@ -61,7 +61,7 @@ func (s *CollectionService) FindCollection(ctx context.Context, filter dq.Collec
 		First(ctx)
 
 	if ent.IsNotFound(err) {
-		return nil, dq.Errorf(dq.ENOTFOUND, "Collection not found.")
+		return nil, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Collection")
 	}
 	if err != nil {
 		return nil, err

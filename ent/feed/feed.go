@@ -23,6 +23,8 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// EdgeCollections holds the string denoting the collections edge name in mutations.
 	EdgeCollections = "collections"
+	// EdgeEntries holds the string denoting the entries edge name in mutations.
+	EdgeEntries = "entries"
 	// Table holds the table name of the feed in the database.
 	Table = "feeds"
 	// CollectionsTable is the table that holds the collections relation/edge. The primary key declared below.
@@ -30,6 +32,13 @@ const (
 	// CollectionsInverseTable is the table name for the Collection entity.
 	// It exists in this package in order to avoid circular dependency with the "collection" package.
 	CollectionsInverseTable = "collections"
+	// EntriesTable is the table that holds the entries relation/edge.
+	EntriesTable = "entries"
+	// EntriesInverseTable is the table name for the Entry entity.
+	// It exists in this package in order to avoid circular dependency with the "entry" package.
+	EntriesInverseTable = "entries"
+	// EntriesColumn is the table column denoting the entries relation/edge.
+	EntriesColumn = "feed_entries"
 )
 
 // Columns holds all SQL columns for feed fields.

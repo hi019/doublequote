@@ -11,8 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"doublequote"
+	dq "doublequote"
 	"doublequote/utils"
+
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -33,6 +34,9 @@ type Server struct {
 	SessionService    dq.SessionService
 	CollectionService dq.CollectionService
 	FeedService       dq.FeedService
+	EntryService      dq.EntryService
+	StorageService    dq.StorageService
+	IngestService     dq.IngestService
 
 	Config dq.Config
 }
@@ -100,7 +104,6 @@ func NewServer() *Server {
 }
 
 func (s *Server) Open() (err error) {
-	// Open a listener on our bind address.
 	if s.Config.HTTP.Domain != "" {
 		s.ln = autocert.NewListener(s.Config.HTTP.Domain)
 	} else {

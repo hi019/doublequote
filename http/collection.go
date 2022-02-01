@@ -126,7 +126,7 @@ func (s *Server) handleGetCollectionFeeds(w http.ResponseWriter, r *http.Request
 		CollectionID: utils.IntPtr(colID),
 		Limit:        500,
 	}
-	feeds, _, err := s.FeedService.FindFeeds(r.Context(), filter, dq.FeedInclude{Collections: true})
+	feeds, _, err := s.FeedService.FindFeeds(r.Context(), filter, dq.FeedInclude{})
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -185,3 +185,28 @@ func (s *Server) handlePutCollectionFeeds(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusOK)
 	sendJSON(w, r, req)
 }
+
+// func (s *Server) handleGetCollectionEntries(w http.ResponseWriter, r *http.Request) {
+// 	colID, err := strconv.Atoi(chi.URLParam(r, "collectionID"))
+// 	if err != nil {
+// 		Error(w, r, err)
+// 		return
+// 	}
+
+// 	// Make sure the requesting user owns the collection
+// 	if col, err := s.CollectionService.FindCollectionByID(r.Context(), colID, dq.CollectionInclude{}); err != nil {
+// 		Error(w, r, err)
+// 		return
+// 	} else if col.UserID != dq.UserIDFromContext(r.Context()) {
+// 		Error(w, r, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Collection"))
+// 		return
+// 	}
+
+// 	feeds, _, err := s.FeedService.FindFeeds(r.Context(), dq.FeedFilter{CollectionID: &colID}, dq.FeedInclude{})
+// 	if err != nil {
+// 		Error(w, r, err)
+// 		return
+// 	}
+
+// 	// entries, err := s.EntryService.FindEntry(r.Context(), dq.EntryFilter{FeedID: }, dq.EntryInclude{})
+// }

@@ -35,9 +35,11 @@ type Feed struct {
 type FeedEdges struct {
 	// Collections holds the value of the collections edge.
 	Collections []*Collection `json:"collections,omitempty"`
+	// Entries holds the value of the entries edge.
+	Entries []*Entry `json:"entries,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // CollectionsOrErr returns the Collections value or an error if the edge
@@ -47,6 +49,15 @@ func (e FeedEdges) CollectionsOrErr() ([]*Collection, error) {
 		return e.Collections, nil
 	}
 	return nil, &NotLoadedError{edge: "collections"}
+}
+
+// EntriesOrErr returns the Entries value or an error if the edge
+// was not loaded in eager-loading.
+func (e FeedEdges) EntriesOrErr() ([]*Entry, error) {
+	if e.loadedTypes[1] {
+		return e.Entries, nil
+	}
+	return nil, &NotLoadedError{edge: "entries"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -119,6 +130,11 @@ func (f *Feed) assignValues(columns []string, values []interface{}) error {
 // QueryCollections queries the "collections" edge of the Feed entity.
 func (f *Feed) QueryCollections() *CollectionQuery {
 	return (&FeedClient{config: f.config}).QueryCollections(f)
+}
+
+// QueryEntries queries the "entries" edge of the Feed entity.
+func (f *Feed) QueryEntries() *EntryQuery {
+	return (&FeedClient{config: f.config}).QueryEntries(f)
 }
 
 // Update returns a builder for updating this Feed.

@@ -21,6 +21,19 @@ func (f CollectionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return f(ctx, mv)
 }
 
+// The EntryFunc type is an adapter to allow the use of ordinary
+// function as Entry mutator.
+type EntryFunc func(context.Context, *ent.EntryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.EntryMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EntryMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The FeedFunc type is an adapter to allow the use of ordinary
 // function as Feed mutator.
 type FeedFunc func(context.Context, *ent.FeedMutation) (ent.Value, error)

@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"doublequote/ent/collection"
+	"doublequote/ent/entry"
 	"doublequote/ent/feed"
 	"doublequote/ent/predicate"
 	"errors"
@@ -28,6 +29,7 @@ type FeedQuery struct {
 	predicates []predicate.Feed
 	// eager-loading edges.
 	withCollections *CollectionQuery
+	withEntries     *EntryQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -79,6 +81,28 @@ func (fq *FeedQuery) QueryCollections() *CollectionQuery {
 			sqlgraph.From(feed.Table, feed.FieldID, selector),
 			sqlgraph.To(collection.Table, collection.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, feed.CollectionsTable, feed.CollectionsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(fq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEntries chains the current query on the "entries" edge.
+func (fq *FeedQuery) QueryEntries() *EntryQuery {
+	query := &EntryQuery{config: fq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := fq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := fq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(feed.Table, feed.FieldID, selector),
+			sqlgraph.To(entry.Table, entry.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, feed.EntriesTable, feed.EntriesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(fq.driver.Dialect(), step)
 		return fromU, nil
@@ -268,6 +292,7 @@ func (fq *FeedQuery) Clone() *FeedQuery {
 		order:           append([]OrderFunc{}, fq.order...),
 		predicates:      append([]predicate.Feed{}, fq.predicates...),
 		withCollections: fq.withCollections.Clone(),
+		withEntries:     fq.withEntries.Clone(),
 		// clone intermediate query.
 		sql:  fq.sql.Clone(),
 		path: fq.path,
@@ -282,6 +307,17 @@ func (fq *FeedQuery) WithCollections(opts ...func(*CollectionQuery)) *FeedQuery 
 		opt(query)
 	}
 	fq.withCollections = query
+	return fq
+}
+
+// WithEntries tells the query-builder to eager-load the nodes that are connected to
+// the "entries" edge. The optional arguments are used to configure the query builder of the edge.
+func (fq *FeedQuery) WithEntries(opts ...func(*EntryQuery)) *FeedQuery {
+	query := &EntryQuery{config: fq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	fq.withEntries = query
 	return fq
 }
 
@@ -350,8 +386,9 @@ func (fq *FeedQuery) sqlAll(ctx context.Context) ([]*Feed, error) {
 	var (
 		nodes       = []*Feed{}
 		_spec       = fq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			fq.withCollections != nil,
+			fq.withEntries != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -439,11 +476,44 @@ func (fq *FeedQuery) sqlAll(ctx context.Context) ([]*Feed, error) {
 		}
 	}
 
+	if query := fq.withEntries; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Feed)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Entries = []*Entry{}
+		}
+		query.withFKs = true
+		query.Where(predicate.Entry(func(s *sql.Selector) {
+			s.Where(sql.InValues(feed.EntriesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.feed_entries
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "feed_entries" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "feed_entries" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Entries = append(node.Edges.Entries, n)
+		}
+	}
+
 	return nodes, nil
 }
 
 func (fq *FeedQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := fq.querySpec()
+	_spec.Node.Columns = fq.fields
+	if len(fq.fields) > 0 {
+		_spec.Unique = fq.unique != nil && *fq.unique
+	}
 	return sqlgraph.CountNodes(ctx, fq.driver, _spec)
 }
 
@@ -514,6 +584,9 @@ func (fq *FeedQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if fq.sql != nil {
 		selector = fq.sql
 		selector.Select(selector.Columns(columns...)...)
+	}
+	if fq.unique != nil && *fq.unique {
+		selector.Distinct()
 	}
 	for _, p := range fq.predicates {
 		p(selector)
@@ -793,9 +866,7 @@ func (fgb *FeedGroupBy) sqlQuery() *sql.Selector {
 		for _, f := range fgb.fields {
 			columns = append(columns, selector.C(f))
 		}
-		for _, c := range aggregation {
-			columns = append(columns, c)
-		}
+		columns = append(columns, aggregation...)
 		selector.Select(columns...)
 	}
 	return selector.GroupBy(selector.Columns(fgb.fields...)...)
