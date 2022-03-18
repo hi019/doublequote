@@ -14,7 +14,7 @@ import (
 // TODO I think this is more of an integration/feature test. Should it be put somewhere else?
 
 func TestEventService(t *testing.T) {
-	err := godotenv.Load("../.env.testing")
+	err := godotenv.Load("../../.env.testing")
 	require.Nil(t, err)
 
 	t.Run("OK", func(t *testing.T) {

@@ -1,4 +1,4 @@
-package config
+package domain
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ type Config struct {
 	App struct {
 		Secret                   string `mapstructure:"secret"`
 		RequireEmailVerification bool   `mapstructure:"require_email_verification"`
-		BucketName               string `mapstructure:"bucket_name"`
+		DataFolder               string `mapstructure:"data_folder"`
 	} `mapstructure:"app"`
 
 	Database struct {

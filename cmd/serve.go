@@ -5,10 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	dq "doublequote/pkg/config"
-
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // serveCmd represents the serve command
@@ -23,12 +20,6 @@ func init() {
 }
 
 func RunServe(_ *cobra.Command, _ []string) error {
-	cfg := dq.Config{}
-	err := viper.Unmarshal(&cfg)
-	if err != nil {
-		return err
-	}
-
 	_, cleanup, err := initializeApplication(&cfg)
 	if err != nil {
 		return err

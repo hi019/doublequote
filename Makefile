@@ -6,18 +6,18 @@ test: generate test-go
 build: generate build-js build-go
 
 migrate:
-	gob run github.com/prisma/prisma-client-go db push
+	go run github.com/prisma/prisma-client-go db push
 generate:
-	gob generate ./...
+	go generate ./...
 test-go:
-	gob test ./... -parallel 8
+	go test ./... -parallel 8
 serve:
-	gob run ./cmd serve
+	go run ./cmd serve
 build-js:
 	cd frontend; yarn install; yarn build
 build-go:
 	cp -r ./frontend/build/* ./assets/frontend
-	gob build -o doublequote doublequote/cmd
+	go build -o doublequote doublequote/cmd
 gen-mock:
 	mockery --case=underscore --outpkg=mock --output=mock --name=$(service)Service --filename=$(service).go
 migrate:

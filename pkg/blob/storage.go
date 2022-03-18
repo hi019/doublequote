@@ -17,10 +17,10 @@ type StorageService struct {
 	bucketName string
 }
 
-func NewStorageService(bucketName string) (*StorageService, func() error, error) {
+func NewStorageService(folderName string) (*StorageService, func() error, error) {
 	s := &StorageService{}
 
-	bucket, err := blob.OpenBucket(context.Background(), "file://"+bucketName)
+	bucket, err := blob.OpenBucket(context.Background(), "file://"+folderName)
 	if err != nil {
 		return nil, nil, err
 	}

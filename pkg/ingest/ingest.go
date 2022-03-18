@@ -15,7 +15,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type IngestService struct {
+type Service struct {
 	feedService    domain.FeedService
 	entryService   domain.EntryService
 	storageService domain.StorageService
@@ -23,14 +23,14 @@ type IngestService struct {
 	http           *http.Client
 }
 
-func NewService(feedService domain.FeedService, entryService domain.EntryService, storageService domain.StorageService) *IngestService {
+func NewService(feedService domain.FeedService, entryService domain.EntryService, storageService domain.StorageService) *Service {
 	fp := gofeed.NewParser()
 	// TODO rate limiting
 	h := http.Client{
 		Timeout: 10 * time.Second,
 	}
 
-	return &IngestService{
+	return &Service{
 		feedService:    feedService,
 		entryService:   entryService,
 		storageService: storageService,
@@ -39,7 +39,7 @@ func NewService(feedService domain.FeedService, entryService domain.EntryService
 	}
 }
 
-func (s *IngestService) Ingest(feed domain.Feed) error {
+func (s *Service) Ingest(feed domain.Feed) error {
 	items, err := s.getItems(feed)
 	if err != nil {
 		return err
@@ -59,6 +59,7 @@ func (s *IngestService) Ingest(feed domain.Feed) error {
 	var out []domain.Entry
 
 	g := errgroup.Group{}
+
 	for _, item := range items {
 		i := item
 		g.Go(func() error {
@@ -78,7 +79,7 @@ func (s *IngestService) Ingest(feed domain.Feed) error {
 	return err
 }
 
-func (s *IngestService) getItems(feed domain.Feed) ([]*gofeed.Item, error) {
+func (s *Service) getItems(feed domain.Feed) ([]*gofeed.Item, error) {
 	res, err := http.Get(feed.RssURL)
 	if err != nil {
 		return nil, err
@@ -93,7 +94,7 @@ func (s *IngestService) getItems(feed domain.Feed) ([]*gofeed.Item, error) {
 	return f.Items, nil
 }
 
-func (s *IngestService) saveEntryContent(entry *domain.Entry) (*domain.Entry, error) {
+func (s *Service) saveEntryContent(entry *domain.Entry) (*domain.Entry, error) {
 	res, err := http.Get(entry.URL)
 	if err != nil {
 		return nil, err

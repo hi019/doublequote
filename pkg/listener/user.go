@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	dq "doublequote/pkg/config"
 	"doublequote/pkg/domain"
 )
 
-func sendVerificationEmail(e domain.Event, emailService domain.EmailService, cryptoService domain.CryptoService, cfg dq.Config) error {
+func sendVerificationEmail(e domain.Event, emailService domain.EmailService, cryptoService domain.CryptoService, cfg domain.Config) error {
 	var p domain.UserCreatedPayload
 	if err := json.Unmarshal(e.Payload, &p); err != nil {
 		return err

@@ -3,19 +3,19 @@ package asynq
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	dq "doublequote/pkg/domain"
 	"github.com/hibiken/asynq"
 )
 
-// Ensure type implements interface.
+// Ensure type implements interface
 var _ dq.EventService = (*EventService)(nil)
 
 type EventService struct {
-	server *asynq.Server
-	mux    *asynq.ServeMux
-	client *asynq.Client
+	server    *asynq.Server
+	mux       *asynq.ServeMux
+	client    *asynq.Client
+	scheduler *asynq.Scheduler
 }
 
 func NewEventService(redisUrl string) *EventService {
@@ -32,14 +32,8 @@ func NewEventService(redisUrl string) *EventService {
 	client := asynq.NewClient(asynq.RedisClientOpt{Addr: redisUrl})
 	s.client = client
 
-	scheduler := asynq.NewScheduler(
-		asynq.RedisClientOpt{Addr: redisUrl},
-		&asynq.SchedulerOpts{
-			Location: time.UTC,
-		},
-	)
-
-	scheduler.Register("a")
+	scheduler := asynq.NewScheduler(asynq.RedisClientOpt{Addr: redisUrl}, nil)
+	s.scheduler = scheduler
 
 	return &s
 }
@@ -63,8 +57,23 @@ func (s *EventService) Publish(topic string, payload dq.Payload) error {
 	return err
 }
 
-// Open starts the Asynq server.
-// NOTE: it must be called after all event handlers are subscribed.
+func (s *EventService) PublishPeriodic(topic, cron string, payload dq.Payload) error {
+	// TODO test
+
+	newPayload, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	if _, err = s.scheduler.Register(cron, asynq.NewTask(topic, newPayload)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Open starts the Asynq server
+// NOTE: it must be called after all event handlers are subscribed
 func (s *EventService) Open() error {
 	return s.server.Start(s.mux)
 }

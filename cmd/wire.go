@@ -7,13 +7,14 @@ package main
 import (
 	"doublequote/pkg/asynq"
 	"doublequote/pkg/blob"
-	dq "doublequote/pkg/config"
 	"doublequote/pkg/crypto"
 	"doublequote/pkg/domain"
 	"doublequote/pkg/http"
 	"doublequote/pkg/ingest"
-	redis2 "doublequote/pkg/redis"
-	sql2 "doublequote/pkg/sql"
+	"doublequote/pkg/listener"
+	"doublequote/pkg/reaper"
+	"doublequote/pkg/redis"
+	"doublequote/pkg/sql"
 	"github.com/google/wire"
 )
 
@@ -32,8 +33,8 @@ type application struct {
 // Setup functions for services that require configuration.
 // This file is used by wire (https://github.com/google/wire) for dependency injection.
 
-func setupSQL(cfg *dq.Config) (*sql2.SQL, func(), error) {
-	d := sql2.NewSQL(cfg.Database.URL)
+func setupSQL(cfg *domain.Config) (*sql.SQL, func(), error) {
+	d := sql.NewSQL(cfg.Database.URL)
 
 	err := d.Open()
 	if err != nil {
@@ -45,13 +46,13 @@ func setupSQL(cfg *dq.Config) (*sql2.SQL, func(), error) {
 	}, nil
 }
 
-func setupCache(cfg *dq.Config) (*redis2.CacheService, error) {
-	d := redis2.NewCache(cfg.Redis.URL)
+func setupCache(cfg *domain.Config) (*redis.CacheService, error) {
+	d := redis.NewCache(cfg.Redis.URL)
 
 	return d, nil
 }
 
-func setupEventService(cfg *dq.Config) (domain.EventService, func(), error) {
+func setupEventService(cfg *domain.Config) (domain.EventService, func(), error) {
 	s := asynq.NewEventService(cfg.Redis.URL)
 
 	err := s.Open()
@@ -64,13 +65,16 @@ func setupEventService(cfg *dq.Config) (domain.EventService, func(), error) {
 	}, nil
 }
 
-func setupCryptoService(cfg *dq.Config) domain.CryptoService {
-	s := crypto.NewService(cfg.App.Secret)
-	return s
+func setupCryptoService(cfg *domain.Config) domain.CryptoService {
+	return crypto.NewService(cfg.App.Secret)
+}
+
+func setupReaperService(entryService *domain.EntryService) domain.ReaperService {
+	return reaper.New(entryService)
 }
 
 func setupServer(
-	cfg *dq.Config,
+	cfg *domain.Config,
 	userService domain.UserService,
 	cryptoService domain.CryptoService,
 	sessionService domain.SessionService,
@@ -101,15 +105,15 @@ func setupServer(
 }
 
 func setupFeedService(
-	s *sql2.SQL,
+	s *sql.SQL,
 ) domain.FeedService {
-	return sql2.NewFeedService(s)
+	return sql.NewFeedService(s)
 }
 
 func setupEntryService(
-	s *sql2.SQL,
+	s *sql.SQL,
 ) domain.EntryService {
-	return sql2.NewEntryService(s)
+	return sql.NewEntryService(s)
 }
 
 func setupIngestService(
@@ -121,12 +125,23 @@ func setupIngestService(
 }
 
 func setupStorageService(
-	cfg *dq.Config,
+	cfg *domain.Config,
 ) (domain.StorageService, func(), error) {
-	a, b, c := blob.NewStorageService(cfg.App.BucketName)
+	a, b, c := blob.NewStorageService(cfg.App.DataFolder)
 	return a, func() {
 		b()
 	}, c
+}
+
+func setupListenerService(
+	eventService domain.EventService,
+	emailService domain.EmailService,
+	cryptoService domain.CryptoService,
+	reaperService domain.ReaperService,
+	cfg domain.Config,
+) {
+	s := listener.NewService(eventService, emailService, cryptoService, reaperService, cfg)
+	s.Start()
 }
 
 func newApplication(
@@ -147,7 +162,7 @@ func newApplication(
 	}
 }
 
-func initializeApplication(cfg *dq.Config) (*application, func(), error) {
+func initializeApplication(cfg *domain.Config) (*application, func(), error) {
 	wire.Build(
 		newApplication,
 		setupServer,
@@ -159,18 +174,20 @@ func initializeApplication(cfg *dq.Config) (*application, func(), error) {
 		setupEntryService,
 		setupIngestService,
 		setupStorageService,
+		setupReaperService,
+		setupListenerService,
 
-		wire.Bind(new(domain.CacheService), new(*redis2.CacheService)),
+		wire.Bind(new(domain.CacheService), new(*redis.CacheService)),
 		setupCache,
 
-		wire.Bind(new(domain.SessionService), new(*redis2.SessionService)),
-		sql2.NewUserService,
+		wire.Bind(new(domain.SessionService), new(*redis.SessionService)),
+		sql.NewUserService,
 
-		wire.Bind(new(domain.UserService), new(*sql2.UserService)),
-		redis2.NewSessionService,
+		wire.Bind(new(domain.UserService), new(*sql.UserService)),
+		redis.NewSessionService,
 
-		wire.Bind(new(domain.CollectionService), new(*sql2.CollectionService)),
-		sql2.NewCollectionService,
+		wire.Bind(new(domain.CollectionService), new(*sql.CollectionService)),
+		sql.NewCollectionService,
 	)
 
 	return &application{}, nil, nil

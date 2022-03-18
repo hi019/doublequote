@@ -7,7 +7,7 @@ port = 8080
 [app]
 require_email_verification = false
 secret = "CHANGE-ME"
-bucket_name = "./dqdata"
+data_folder = "./dqdata"
 
 [database]
 url = "file:./data.sqlite"

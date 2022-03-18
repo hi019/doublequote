@@ -9,7 +9,6 @@ package main
 import (
 	"doublequote/pkg/asynq"
 	"doublequote/pkg/blob"
-	"doublequote/pkg/config"
 	"doublequote/pkg/crypto"
 	"doublequote/pkg/domain"
 	"doublequote/pkg/http"
@@ -20,7 +19,7 @@ import (
 
 // Injectors from wire.go:
 
-func initializeApplication(cfg *config.Config) (*application, func(), error) {
+func initializeApplication(cfg *domain.Config) (*application, func(), error) {
 	sqlSQL, cleanup, err := setupSQL(cfg)
 	if err != nil {
 		return nil, nil, err
@@ -79,7 +78,7 @@ type application struct {
 	httpServer *http.Server
 }
 
-func setupSQL(cfg *config.Config) (*sql2.SQL, func(), error) {
+func setupSQL(cfg *domain.Config) (*sql2.SQL, func(), error) {
 	d := sql2.NewSQL(cfg.Database.URL)
 
 	err := d.Open()
@@ -92,13 +91,13 @@ func setupSQL(cfg *config.Config) (*sql2.SQL, func(), error) {
 	}, nil
 }
 
-func setupCache(cfg *config.Config) (*redis2.CacheService, error) {
+func setupCache(cfg *domain.Config) (*redis2.CacheService, error) {
 	d := redis2.NewCache(cfg.Redis.URL)
 
 	return d, nil
 }
 
-func setupEventService(cfg *config.Config) (domain.EventService, func(), error) {
+func setupEventService(cfg *domain.Config) (domain.EventService, func(), error) {
 	s := asynq.NewEventService(cfg.Redis.URL)
 
 	err := s.Open()
@@ -111,13 +110,13 @@ func setupEventService(cfg *config.Config) (domain.EventService, func(), error) 
 	}, nil
 }
 
-func setupCryptoService(cfg *config.Config) domain.CryptoService {
+func setupCryptoService(cfg *domain.Config) domain.CryptoService {
 	s := crypto.NewService(cfg.App.Secret)
 	return s
 }
 
 func setupServer(
-	cfg *config.Config,
+	cfg *domain.Config,
 	userService domain.UserService,
 	cryptoService domain.CryptoService,
 	sessionService domain.SessionService,
@@ -168,9 +167,9 @@ func setupIngestService(
 }
 
 func setupStorageService(
-	cfg *config.Config,
+	cfg *domain.Config,
 ) (domain.StorageService, func(), error) {
-	a, b, c := blob.NewStorageService(cfg.App.BucketName)
+	a, b, c := blob.NewStorageService(cfg.App.DataFolder)
 	return a, func() {
 		b()
 	}, c

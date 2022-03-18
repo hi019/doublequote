@@ -27,8 +27,11 @@ type UserCreatedPayload struct {
 // EventService represents a service for managing event dispatch and event
 // listeners (aka subscriptions).
 type EventService interface {
-	// Publish publishes an event to a user's event listeners.
+	// Publish publishes an event to a topic.
 	Publish(topic string, payload Payload) error
+
+	// PublishPeriodic periodically publishes an event to a topic.
+	PublishPeriodic(topic, cron string, payload Payload) error
 
 	// Subscribe creates a subscription for topic's events.
 	Subscribe(topic string, handler EventHandler)

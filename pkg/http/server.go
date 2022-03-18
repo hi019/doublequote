@@ -12,7 +12,6 @@ import (
 	"time"
 
 	dq "doublequote"
-	"doublequote/pkg/config"
 	"doublequote/pkg/domain"
 	"doublequote/pkg/utils"
 	"github.com/go-chi/chi/v5"
@@ -39,7 +38,7 @@ type Server struct {
 	StorageService    domain.StorageService
 	IngestService     domain.IngestService
 
-	Config config.Config
+	Config domain.Config
 }
 
 func NewServer() *Server {
