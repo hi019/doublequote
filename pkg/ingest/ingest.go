@@ -1,18 +1,15 @@
 package ingest
 
+// TODO rename to parser?
+
 import (
-	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
 
 	"doublequote/pkg/domain"
-	"github.com/google/uuid"
-
 	"github.com/go-shiori/go-readability"
 	"github.com/mmcdole/gofeed"
-	"golang.org/x/sync/errgroup"
 )
 
 type Service struct {
@@ -39,47 +36,24 @@ func NewService(feedService domain.FeedService, entryService domain.EntryService
 	}
 }
 
-func (s *Service) Ingest(feed domain.Feed) error {
-	items, err := s.getItems(feed)
+func (s *Service) GetEntries(feed *domain.Feed) (entries []*domain.Entry, err error) {
+	tmpItems, err := s.getItems(feed)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fetchItem := func(item *gofeed.Item) (*domain.Entry, error) {
-		e := parseItem(item, feed)
-
-		e, err = s.saveEntryContent(e)
-		if err != nil {
-			return e, err
-		}
-
-		return e, nil
+	for _, item := range tmpItems {
+		entries = append(entries, parseItem(item, feed))
 	}
 
-	var out []domain.Entry
-
-	g := errgroup.Group{}
-
-	for _, item := range items {
-		i := item
-		g.Go(func() error {
-			e, err := fetchItem(i)
-			if err != nil {
-				return err
-			}
-			out = append(out, *e)
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
-
-	_, err = s.entryService.CreateManyEntry(context.Background(), out)
-	return err
+	return
 }
 
-func (s *Service) getItems(feed domain.Feed) ([]*gofeed.Item, error) {
+func (s *Service) GetEntryContent(entry *domain.Entry) (content string, err error) {
+	return s.getEntryContent(entry)
+}
+
+func (s *Service) getItems(feed *domain.Feed) ([]*gofeed.Item, error) {
 	res, err := http.Get(feed.RssURL)
 	if err != nil {
 		return nil, err
@@ -94,31 +68,27 @@ func (s *Service) getItems(feed domain.Feed) ([]*gofeed.Item, error) {
 	return f.Items, nil
 }
 
-func (s *Service) saveEntryContent(entry *domain.Entry) (*domain.Entry, error) {
+func (s *Service) getEntryContent(entry *domain.Entry) (string, error) {
 	res, err := http.Get(entry.URL)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer res.Body.Close()
 
 	parsedURL, err := url.Parse(entry.URL)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	content, err := readability.FromReader(res.Body, parsedURL)
-
-	key := fmt.Sprintf("content_%s", uuid.New().String())
-	if err := s.storageService.Set(context.Background(), key, []byte(content.Content)); err != nil {
-		return nil, err
+	if err != nil {
+		return "", err
 	}
 
-	entry.ContentKey = key
-
-	return entry, nil
+	return content.Content, nil
 
 }
 
-func parseItem(i *gofeed.Item, f domain.Feed) *domain.Entry {
+func parseItem(i *gofeed.Item, f *domain.Feed) *domain.Entry {
 	author := "Unknown"
 	if len(i.Authors) > 0 {
 		author = i.Authors[0].Name

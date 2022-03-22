@@ -1,5 +1,6 @@
 package domain
 
 type IngestService interface {
-	Ingest(feed Feed) error
+	GetEntries(feed *Feed) (entries []*Entry, err error)
+	GetEntryContent(entry *Entry) (content string)
 }
