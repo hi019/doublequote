@@ -4,23 +4,23 @@ import (
 	"context"
 	"io"
 
-	dq "doublequote/pkg/domain"
+	"doublequote/pkg/domain"
 
 	"gocloud.dev/blob"
 	_ "gocloud.dev/blob/fileblob"
 )
 
-var _ dq.StorageService = (*StorageService)(nil)
+var _ domain.StorageService = (*StorageService)(nil)
 
 type StorageService struct {
 	svc        *blob.Bucket
 	bucketName string
 }
 
-func NewStorageService(folderName string) (*StorageService, func() error, error) {
+func NewStorageService(cfg domain.Config) (*StorageService, func() error, error) {
 	s := &StorageService{}
 
-	bucket, err := blob.OpenBucket(context.Background(), "file://"+folderName)
+	bucket, err := blob.OpenBucket(context.Background(), "file://"+cfg.App.DataFolder)
 	if err != nil {
 		return nil, nil, err
 	}

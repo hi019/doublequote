@@ -4,8 +4,10 @@ import (
 	"context"
 	"time"
 
+	"doublequote/pkg/domain"
 	entsql "entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/schema"
+	"go.uber.org/fx"
 
 	"doublequote/ent"
 
@@ -23,15 +25,26 @@ type SQL struct {
 }
 
 // NewSQL returns a new instance of SQL associated with the given datasource name
-func NewSQL(dbUrl string) *SQL {
-	return &SQL{
-		dbUrl: dbUrl,
+func NewSQL(lc fx.Lifecycle, cfg domain.Config) *SQL {
+	s := &SQL{
+		dbUrl: cfg.Database.URL,
 		Now:   time.Now,
 	}
+
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			return s.open()
+		},
+		OnStop: func(ctx context.Context) error {
+			return s.close()
+		},
+	})
+
+	return s
 }
 
 // Open opens the database connection
-func (sql *SQL) Open() error {
+func (sql *SQL) open() error {
 	c, err := createClient(sql.dbUrl)
 	if err != nil {
 		return err
@@ -49,7 +62,7 @@ func (sql *SQL) Open() error {
 }
 
 // Close closes the database connection
-func (sql *SQL) Close() error {
+func (sql *SQL) close() error {
 	return sql.client.Close()
 }
 

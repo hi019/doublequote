@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"doublequote/pkg/domain"
 
@@ -14,7 +13,7 @@ import (
 )
 
 func (s *Server) registerFeedRoutes(r chi.Router) {
-	r.Post("/feeds/{feedID}/ingest", s.handleIngestFeed)
+	//r.Post("/feeds/{feedID}/ingest", s.handleIngestFeed)
 	r.Post("/feeds", s.handleCreateFeed)
 }
 
@@ -72,7 +71,7 @@ func (s *Server) handleCreateFeed(w http.ResponseWriter, r *http.Request) {
 		RssURL: req.RssURL,
 		Domain: req.Domain,
 	}
-	created, err := s.FeedService.CreateFeed(r.Context(), &f)
+	created, err := s.feedService.CreateFeed(r.Context(), &f)
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -88,20 +87,20 @@ func (s *Server) handleCreateFeed(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) handleIngestFeed(w http.ResponseWriter, r *http.Request) {
-	feedID, err := strconv.Atoi(chi.URLParam(r, "feedID"))
-	if err != nil {
-		Error(w, r, err)
-		return
-	}
-
-	feed, err := s.FeedService.FindFeedByID(r.Context(), feedID, domain.FeedInclude{})
-	if err != nil {
-		Error(w, r, err)
-		return
-	}
-
-	err = s.IngestService.Ingest(*feed)
-}
+//func (s *Server) handleIngestFeed(w http.ResponseWriter, r *http.Request) {
+//	feedID, err := strconv.Atoi(chi.URLParam(r, "feedID"))
+//	if err != nil {
+//		Error(w, r, err)
+//		return
+//	}
+//
+//	feed, err := s.feedService.FindFeedByID(r.Context(), feedID, domain.FeedInclude{})
+//	if err != nil {
+//		Error(w, r, err)
+//		return
+//	}
+//
+//	err = s.ingestService.Ingest(*feed)
+//}
 
 // TODO delete, update for feeds

@@ -1,5 +1,3 @@
 package domain
 
-type ListenerService interface {
-	Start() error
-}
+type ListenerService interface{}

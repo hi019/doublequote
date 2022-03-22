@@ -23,7 +23,7 @@ func TestEventService(t *testing.T) {
 			assert.Nil(t, es.Close())
 		}(es)
 
-		err := es.Open()
+		err := es.open()
 		assert.Nil(t, err)
 
 		// Wait until server is ready

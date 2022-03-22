@@ -4,26 +4,26 @@ import (
 	"context"
 	"time"
 
-	dq "doublequote/pkg/domain"
+	"doublequote/pkg/domain"
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 )
 
-// Ensure type implements interface.
-var _ dq.CacheService = (*CacheService)(nil)
+// Ensure type implements interface
+var _ domain.CacheService = (*CacheService)(nil)
 
 type CacheService struct {
 	store *cache.Cache
 	addr  string
 }
 
-// NewCache initializes a new cache.
+// NewCache initializes a new cache
 // TODO password support
-func NewCache(addr string) *CacheService {
+func NewCache(cfg domain.Config) *CacheService {
 	c := CacheService{}
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     addr,
+		Addr:     cfg.Redis.URL,
 		Password: "",
 		DB:       0,
 	})

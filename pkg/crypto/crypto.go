@@ -3,20 +3,20 @@ package crypto
 import (
 	"time"
 
-	dq "doublequote/pkg/domain"
+	domain "doublequote/pkg/domain"
 )
 
 // Ensure type implements interface.
-var _ dq.CryptoService = (*Service)(nil)
+var _ domain.CryptoService = (*Service)(nil)
 
 type Service struct {
 	key []byte
 	now func() time.Time
 }
 
-func NewService(key string) *Service {
+func NewService(cfg domain.Config) *Service {
 	return &Service{
-		key: []byte(key),
+		key: []byte(cfg.App.Secret),
 		now: time.Now,
 	}
 }

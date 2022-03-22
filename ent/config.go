@@ -10,7 +10,7 @@ import (
 // Option function to configure the client.
 type Option func(*config)
 
-// Config is the configuration for the client and its builder.
+// config is the configuration for the client and its builder.
 type config struct {
 	// driver used for executing database requests.
 	driver dialect.Driver

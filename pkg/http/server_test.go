@@ -13,10 +13,10 @@ import (
 func TestOpenClose(t *testing.T) {
 	s := NewServer()
 
-	err := s.Open()
+	err := s.open()
 	assert.Nil(t, err)
 
-	err = s.Close()
+	err = s.close()
 	assert.Nil(t, err)
 }
 

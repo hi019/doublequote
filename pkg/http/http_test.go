@@ -24,19 +24,19 @@ func NewTestServer() *TestServer {
 	s := TestServer{Server: NewServer()}
 
 	s.CryptoService = &mock2.CryptoService{}
-	s.Server.CryptoService = s.CryptoService
+	s.Server.cryptoService = s.CryptoService
 
 	s.UserService = &mock2.UserService{}
-	s.Server.UserService = s.UserService
+	s.Server.userService = s.UserService
 
 	s.SessionService = &mock2.SessionService{}
-	s.Server.SessionService = s.SessionService
+	s.Server.sessionService = s.SessionService
 
 	s.CollectionService = &mock2.CollectionService{}
-	s.Server.CollectionService = s.CollectionService
+	s.Server.collectionService = s.CollectionService
 
 	s.FeedService = &mock2.FeedService{}
-	s.Server.FeedService = s.FeedService
+	s.Server.feedService = s.FeedService
 
 	return &s
 }

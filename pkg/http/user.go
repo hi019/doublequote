@@ -55,7 +55,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		},
 		&EmailIsUnique{
 			Email:       req.Email,
-			UserService: s.UserService,
+			UserService: s.userService,
 		},
 	)
 	if errors.HasAny() {
@@ -67,14 +67,14 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		Email:    req.Email,
 		Password: req.Password,
 	}
-	_, err = s.UserService.CreateUser(r.Context(), &u)
+	_, err = s.userService.CreateUser(r.Context(), &u)
 	if err != nil {
 		Error(w, r, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	sendJSON(w, r, registerResponse{s.Config.App.RequireEmailVerification})
+	sendJSON(w, r, registerResponse{s.config.App.RequireEmailVerification})
 }
 
 type emailVerificationRequest struct {
@@ -102,14 +102,14 @@ func (s *Server) handleEmailVerification(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Validate JWT
-	data, err := s.CryptoService.VerifyToken(req.Token)
+	data, err := s.cryptoService.VerifyToken(req.Token)
 	if err != nil {
 		Error(w, r, domain.Errorf(domain.EINVALID, domain.ErrInvalidJSONBody))
 		return
 	}
 
 	// Update user
-	_, err = s.UserService.UpdateUser(r.Context(), data["id"].(int), domain.UserUpdate{EmailVerifiedAt: utils.TimePtr(s.now())})
+	_, err = s.userService.UpdateUser(r.Context(), data["id"].(int), domain.UserUpdate{EmailVerifiedAt: utils.TimePtr(s.now())})
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -150,7 +150,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := s.UserService.FindUser(r.Context(), domain.UserFilter{Email: utils.StringPtr(req.Email)}, domain.UserInclude{})
+	u, err := s.userService.FindUser(r.Context(), domain.UserFilter{Email: utils.StringPtr(req.Email)}, domain.UserInclude{})
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -161,13 +161,13 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	correct := s.CryptoService.VerifyPassword(u.Password, req.Password)
+	correct := s.cryptoService.VerifyPassword(u.Password, req.Password)
 	if !correct {
 		Error(w, r, domain.Errorf(domain.EINVALID, domain.UserNotFound))
 		return
 	}
 
-	_, err = s.SessionService.Create(w, r, u.ID)
+	_, err = s.sessionService.Create(w, r, u.ID)
 	if err != nil {
 		Error(w, r, err)
 		return

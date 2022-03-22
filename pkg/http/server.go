@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"go.uber.org/fx"
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -28,26 +29,78 @@ type Server struct {
 	router *chi.Mux
 	now    func() time.Time
 
-	// Services used by the various HTTP routes.
-	UserService       domain.UserService
-	CryptoService     domain.CryptoService
-	SessionService    domain.SessionService
-	CollectionService domain.CollectionService
-	FeedService       domain.FeedService
-	EntryService      domain.EntryService
-	StorageService    domain.StorageService
-	IngestService     domain.IngestService
+	userService       domain.UserService
+	cryptoService     domain.CryptoService
+	sessionService    domain.SessionService
+	collectionService domain.CollectionService
+	feedService       domain.FeedService
+	entryService      domain.EntryService
+	storageService    domain.StorageService
 
-	Config domain.Config
+	config domain.Config
 }
 
-func NewServer() *Server {
+func NewServer(
+	lc fx.Lifecycle,
+	userService domain.UserService,
+	cryptoService domain.CryptoService,
+	sessionService domain.SessionService,
+	collectionService domain.CollectionService,
+	feedService domain.FeedService,
+	entryService domain.EntryService,
+	storageService domain.StorageService,
+	config domain.Config,
+) *Server {
 	s := &Server{
+		userService:       userService,
+		cryptoService:     cryptoService,
+		sessionService:    sessionService,
+		collectionService: collectionService,
+		feedService:       feedService,
+		entryService:      entryService,
+		storageService:    storageService,
+		config:            config,
+
 		server: &http.Server{},
 		router: chi.NewRouter(),
 		now:    time.Now,
 	}
 
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			return s.open()
+		},
+		OnStop: func(ctx context.Context) error {
+			return s.close()
+		},
+	})
+
+	s.setupRouter()
+
+	return s
+}
+
+func (s *Server) open() (err error) {
+	if s.config.HTTP.Domain != "" {
+		s.ln = autocert.NewListener(s.config.HTTP.Domain)
+	} else {
+		if s.ln, err = net.Listen("tcp", ":"+s.config.HTTP.Port); err != nil {
+			return err
+		}
+	}
+
+	go s.server.Serve(s.ln)
+
+	return nil
+}
+
+func (s *Server) close() (err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
+	defer cancel()
+	return s.server.Shutdown(ctx)
+}
+
+func (s *Server) setupRouter() {
 	s.router.Use(chimw.Logger)
 
 	// TODO change this?
@@ -99,35 +152,13 @@ func NewServer() *Server {
 	})
 
 	s.server.Handler = s.router
-
-	return s
-}
-
-func (s *Server) Open() (err error) {
-	if s.Config.HTTP.Domain != "" {
-		s.ln = autocert.NewListener(s.Config.HTTP.Domain)
-	} else {
-		if s.ln, err = net.Listen("tcp", ":"+s.Config.HTTP.Port); err != nil {
-			return err
-		}
-	}
-
-	go s.server.Serve(s.ln)
-
-	return nil
-}
-
-func (s *Server) Close() (err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
-	defer cancel()
-	return s.server.Shutdown(ctx)
 }
 
 // requireAuth is a middleware for requiring authentication
 func (s *Server) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Get session, make sure it's not empty.
-		sess, err := s.SessionService.Get(r)
+		sess, err := s.sessionService.Get(r)
 		if err != nil {
 			Error(w, r, err)
 			return
@@ -138,7 +169,7 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 		}
 
 		// Find user associated with session, then add it to the request context.
-		u, err := s.UserService.FindUser(r.Context(), domain.UserFilter{ID: utils.IntPtr(sess.UserID())}, domain.UserInclude{})
+		u, err := s.userService.FindUser(r.Context(), domain.UserFilter{ID: utils.IntPtr(sess.UserID())}, domain.UserInclude{})
 		if err != nil {
 			Error(w, r, err)
 			return

@@ -7,10 +7,10 @@ package sql
 // 	t.Run("OK", func(t *testing.T) {
 // 		db := NewSQL(os.Getenv("DATABASE_URL"))
 
-// 		err := db.Open()
+// 		err := db.open()
 // 		assert.Nil(t, err)
 
-// 		err = db.Close()
+// 		err = db.close()
 // 		assert.Nil(t, err)
 // 	})
 // }

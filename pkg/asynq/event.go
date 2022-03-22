@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 
-	dq "doublequote/pkg/domain"
+	domain "doublequote/pkg/domain"
 	"github.com/hibiken/asynq"
+	"go.uber.org/fx"
 )
 
 // Ensure type implements interface
-var _ dq.EventService = (*EventService)(nil)
+var _ domain.EventService = (*EventService)(nil)
 
 type EventService struct {
 	server    *asynq.Server
@@ -18,36 +19,45 @@ type EventService struct {
 	scheduler *asynq.Scheduler
 }
 
-func NewEventService(redisUrl string) *EventService {
+func NewEventService(lc fx.Lifecycle, cfg domain.Config) *EventService {
 	s := EventService{
 		mux: asynq.NewServeMux(),
 	}
 
 	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: redisUrl},
+		asynq.RedisClientOpt{Addr: cfg.Redis.URL},
 		asynq.Config{Concurrency: 10},
 	)
 	s.server = srv
 
-	client := asynq.NewClient(asynq.RedisClientOpt{Addr: redisUrl})
+	client := asynq.NewClient(asynq.RedisClientOpt{Addr: cfg.Redis.URL})
 	s.client = client
 
-	scheduler := asynq.NewScheduler(asynq.RedisClientOpt{Addr: redisUrl}, nil)
+	scheduler := asynq.NewScheduler(asynq.RedisClientOpt{Addr: cfg.Redis.URL}, nil)
 	s.scheduler = scheduler
+
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			return s.open()
+		},
+		OnStop: func(ctx context.Context) error {
+			return s.close()
+		},
+	})
 
 	return &s
 }
 
-func (s *EventService) Subscribe(topic string, handler dq.EventHandler) {
+func (s *EventService) Subscribe(topic string, handler domain.EventHandler) {
 	s.mux.HandleFunc(topic, func(ctx context.Context, task *asynq.Task) error {
-		return handler(dq.Event{
+		return handler(domain.Event{
 			Topic:   topic,
 			Payload: task.Payload(),
 		})
 	})
 }
 
-func (s *EventService) Publish(topic string, payload dq.Payload) error {
+func (s *EventService) Publish(topic string, payload domain.Payload) error {
 	newPayload, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -57,7 +67,7 @@ func (s *EventService) Publish(topic string, payload dq.Payload) error {
 	return err
 }
 
-func (s *EventService) PublishPeriodic(topic, cron string, payload dq.Payload) error {
+func (s *EventService) PublishPeriodic(topic, cron string, payload domain.Payload) error {
 	// TODO test
 
 	newPayload, err := json.Marshal(payload)
@@ -72,13 +82,13 @@ func (s *EventService) PublishPeriodic(topic, cron string, payload dq.Payload) e
 	return nil
 }
 
-// Open starts the Asynq server
+// open starts the Asynq server
 // NOTE: it must be called after all event handlers are subscribed
-func (s *EventService) Open() error {
+func (s *EventService) open() error {
 	return s.server.Start(s.mux)
 }
 
-func (s *EventService) Close() error {
+func (s *EventService) close() error {
 	s.server.Shutdown()
 	return s.client.Close()
 }

@@ -51,7 +51,7 @@ func (s *Server) handleCreateCollection(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	created, err := s.CollectionService.CreateCollection(r.Context(), &domain.Collection{
+	created, err := s.collectionService.CreateCollection(r.Context(), &domain.Collection{
 		Name:   req.Name,
 		UserID: domain.UserIDFromContext(r.Context()),
 	})
@@ -76,7 +76,7 @@ func (s *Server) handleListCollections(w http.ResponseWriter, r *http.Request) {
 		UserID: utils.IntPtr(domain.UserIDFromContext(r.Context())),
 		Limit:  100,
 	}
-	c, _, err := s.CollectionService.FindCollections(r.Context(), filter, domain.CollectionInclude{})
+	c, _, err := s.collectionService.FindCollections(r.Context(), filter, domain.CollectionInclude{})
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -113,7 +113,7 @@ func (s *Server) handleGetCollectionFeeds(w http.ResponseWriter, r *http.Request
 	}
 
 	// Make sure the requesting user owns the collection
-	if col, err := s.CollectionService.FindCollectionByID(r.Context(), colID, domain.CollectionInclude{}); err != nil {
+	if col, err := s.collectionService.FindCollectionByID(r.Context(), colID, domain.CollectionInclude{}); err != nil {
 		Error(w, r, err)
 		return
 	} else if col.UserID != domain.UserIDFromContext(r.Context()) {
@@ -125,7 +125,7 @@ func (s *Server) handleGetCollectionFeeds(w http.ResponseWriter, r *http.Request
 		CollectionID: utils.IntPtr(colID),
 		Limit:        500,
 	}
-	feeds, _, err := s.FeedService.FindFeeds(r.Context(), filter, domain.FeedInclude{})
+	feeds, _, err := s.feedService.FindFeeds(r.Context(), filter, domain.FeedInclude{})
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -158,7 +158,7 @@ func (s *Server) handlePutCollectionFeeds(w http.ResponseWriter, r *http.Request
 	}
 
 	// Make sure the requesting user owns the collection
-	if col, err := s.CollectionService.FindCollectionByID(r.Context(), colID, domain.CollectionInclude{}); err != nil {
+	if col, err := s.collectionService.FindCollectionByID(r.Context(), colID, domain.CollectionInclude{}); err != nil {
 		Error(w, r, err)
 		return
 	} else if col.UserID != domain.UserIDFromContext(r.Context()) {
@@ -175,7 +175,7 @@ func (s *Server) handlePutCollectionFeeds(w http.ResponseWriter, r *http.Request
 	}
 
 	// Update collection
-	_, err = s.CollectionService.UpdateCollection(r.Context(), colID, domain.CollectionUpdate{FeedsIDs: &req.Feeds})
+	_, err = s.collectionService.UpdateCollection(r.Context(), colID, domain.CollectionUpdate{FeedsIDs: &req.Feeds})
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -193,7 +193,7 @@ func (s *Server) handlePutCollectionFeeds(w http.ResponseWriter, r *http.Request
 // 	}
 
 // 	// Make sure the requesting user owns the collection
-// 	if col, err := s.CollectionService.FindCollectionByID(r.Context(), colID, dq.CollectionInclude{}); err != nil {
+// 	if col, err := s.collectionService.FindCollectionByID(r.Context(), colID, dq.CollectionInclude{}); err != nil {
 // 		Error(w, r, err)
 // 		return
 // 	} else if col.UserID != dq.UserIDFromContext(r.Context()) {
@@ -201,11 +201,11 @@ func (s *Server) handlePutCollectionFeeds(w http.ResponseWriter, r *http.Request
 // 		return
 // 	}
 
-// 	feeds, _, err := s.FeedService.FindFeeds(r.Context(), dq.FeedFilter{CollectionID: &colID}, dq.FeedInclude{})
+// 	feeds, _, err := s.feedService.FindFeeds(r.Context(), dq.FeedFilter{CollectionID: &colID}, dq.FeedInclude{})
 // 	if err != nil {
 // 		Error(w, r, err)
 // 		return
 // 	}
 
-// 	// entries, err := s.EntryService.FindEntry(r.Context(), dq.EntryFilter{FeedID: }, dq.EntryInclude{})
+// 	// entries, err := s.entryService.FindEntry(r.Context(), dq.EntryFilter{FeedID: }, dq.EntryInclude{})
 // }
