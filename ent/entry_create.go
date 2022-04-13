@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"doublequote/ent/collectionentry"
 	"doublequote/ent/entry"
 	"doublequote/ent/feed"
 	"errors"
@@ -90,6 +91,21 @@ func (ec *EntryCreate) SetNillableFeedID(id *int) *EntryCreate {
 // SetFeed sets the "feed" edge to the Feed entity.
 func (ec *EntryCreate) SetFeed(f *Feed) *EntryCreate {
 	return ec.SetFeedID(f.ID)
+}
+
+// AddCollectionEntryIDs adds the "collection_entries" edge to the CollectionEntry entity by IDs.
+func (ec *EntryCreate) AddCollectionEntryIDs(ids ...int) *EntryCreate {
+	ec.mutation.AddCollectionEntryIDs(ids...)
+	return ec
+}
+
+// AddCollectionEntries adds the "collection_entries" edges to the CollectionEntry entity.
+func (ec *EntryCreate) AddCollectionEntries(c ...*CollectionEntry) *EntryCreate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return ec.AddCollectionEntryIDs(ids...)
 }
 
 // Mutation returns the EntryMutation object of the builder.
@@ -286,6 +302,25 @@ func (ec *EntryCreate) createSpec() (*Entry, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.feed_entries = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ec.mutation.CollectionEntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   entry.CollectionEntriesTable,
+			Columns: entry.CollectionEntriesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: collectionentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

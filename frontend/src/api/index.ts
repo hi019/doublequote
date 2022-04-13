@@ -10,7 +10,7 @@ import {
   SignupRequest,
   VerifyEmailRequest,
 } from "./types";
-import { isDataType, isErrorType } from "../utils";
+import { isDataType, isErrorType } from "../helpers/types";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.REACT_APP_API_URL,

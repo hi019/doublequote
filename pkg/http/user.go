@@ -104,12 +104,13 @@ func (s *Server) handleEmailVerification(w http.ResponseWriter, r *http.Request)
 	// Validate JWT
 	data, err := s.cryptoService.VerifyToken(req.Token)
 	if err != nil {
-		Error(w, r, domain.Errorf(domain.EINVALID, domain.ErrInvalidJSONBody))
+		Error(w, r, domain.Errorf(domain.EINVALID, domain.ErrInvalidToken))
 		return
 	}
 
 	// Update user
-	_, err = s.userService.UpdateUser(r.Context(), data["id"].(int), domain.UserUpdate{EmailVerifiedAt: utils.TimePtr(s.now())})
+	id := int(data["id"].(float64))
+	_, err = s.userService.UpdateUser(r.Context(), id, domain.UserUpdate{EmailVerifiedAt: utils.TimePtr(s.now())})
 	if err != nil {
 		Error(w, r, err)
 		return
@@ -151,13 +152,13 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u, err := s.userService.FindUser(r.Context(), domain.UserFilter{Email: utils.StringPtr(req.Email)}, domain.UserInclude{})
-	if err != nil {
-		Error(w, r, err)
+	// TODO an attacker could determine whether an email is registered or not through a timing attack
+	if domain.ErrorCode(err) == domain.ENOTFOUND {
+		Error(w, r, domain.Errorf(domain.EINVALID, domain.UserNotFound))
 		return
 	}
-	// TODO an attacker could determine whether an email is registered or not through a timing attack
-	if u == nil {
-		Error(w, r, domain.Errorf(domain.EINVALID, domain.UserNotFound))
+	if err != nil {
+		Error(w, r, err)
 		return
 	}
 

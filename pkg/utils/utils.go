@@ -21,7 +21,7 @@ func IntPtr(v int) *int { return &v }
 
 func TimePtr(v time.Time) *time.Time { return &v }
 
-func IntArrayPtr(v []int) *[]int { return &v }
+func Ptr[V any](v V) *V { return &v }
 
 // RandomString generates a random string, and panics if there is an error.
 // https://gist.github.com/dopey/c69559607800d2f2f90b1b1ed4e550fb

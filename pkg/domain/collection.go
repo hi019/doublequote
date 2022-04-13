@@ -38,6 +38,8 @@ type CollectionFilter struct {
 	Name   *string
 	UserID *int
 
+	FeedID *int
+
 	Offset int
 	Limit  int
 }

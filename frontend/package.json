@@ -3,11 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@adobe/react-spectrum": "^3.16.5",
     "@craco/craco": "^6.3.0",
     "@headlessui/react": "^1.4.1",
     "@heroicons/react": "^1.0.4",
     "@prefresh/webpack": "^3.3.2",
+    "@radix-ui/colors": "^0.1.8",
     "@reduxjs/toolkit": "^1.6.2",
+    "@stitches/react": "^1.2.7",
+    "@testing-library/dom": "^8.13.0",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
@@ -39,7 +43,8 @@
     "start": "craco start",
     "build": "craco build",
     "test": "craco test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "nc": "new-component -d src/components -x tsx"
   },
   "eslintConfig": {
     "extends": [
@@ -62,6 +67,7 @@
   "devDependencies": {
     "@tailwindcss/forms": "^0.3.4",
     "autoprefixer": "^9",
+    "new-component": "^3.0.2",
     "postcss": "^7",
     "tailwindcss": "npm:@tailwindcss/postcss7-compat",
     "tailwindcss-cli": "^0.1.2"

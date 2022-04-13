@@ -1,7 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { api } from "../api";
 import { setupListeners } from "@reduxjs/toolkit/query";
-import { userSlice } from "../shared/slices/user";
+import { userSlice } from "../slices/user";
 import { loadState, saveState } from "./localStorage";
 
 const persistedState = loadState();

@@ -1,13 +1,13 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Landing } from "./landing";
-import { Signup } from "./signup";
+import { Landing } from "./pages/landing";
+import { Signup } from "./pages/signup";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Signin } from "./signin";
-import { RequireAuth } from "./shared/components/RequireAuth";
-import { Protected } from "./shared/components/Protected";
-import { Verify } from "./verify";
+import { Signin } from "./pages/signin";
+import { RequireAuth } from "./components/RequireAuth";
+import { Protected } from "./components/Protected";
+import { Verify } from "./pages/verify";
 
 function App() {
   return (

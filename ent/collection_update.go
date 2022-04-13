@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"doublequote/ent/collection"
+	"doublequote/ent/collectionentry"
 	"doublequote/ent/feed"
 	"doublequote/ent/predicate"
 	"doublequote/ent/user"
@@ -61,6 +62,21 @@ func (cu *CollectionUpdate) SetUser(u *User) *CollectionUpdate {
 	return cu.SetUserID(u.ID)
 }
 
+// AddCollectionEntryIDs adds the "collection_entries" edge to the CollectionEntry entity by IDs.
+func (cu *CollectionUpdate) AddCollectionEntryIDs(ids ...int) *CollectionUpdate {
+	cu.mutation.AddCollectionEntryIDs(ids...)
+	return cu
+}
+
+// AddCollectionEntries adds the "collection_entries" edges to the CollectionEntry entity.
+func (cu *CollectionUpdate) AddCollectionEntries(c ...*CollectionEntry) *CollectionUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cu.AddCollectionEntryIDs(ids...)
+}
+
 // AddFeedIDs adds the "feeds" edge to the Feed entity by IDs.
 func (cu *CollectionUpdate) AddFeedIDs(ids ...int) *CollectionUpdate {
 	cu.mutation.AddFeedIDs(ids...)
@@ -85,6 +101,27 @@ func (cu *CollectionUpdate) Mutation() *CollectionMutation {
 func (cu *CollectionUpdate) ClearUser() *CollectionUpdate {
 	cu.mutation.ClearUser()
 	return cu
+}
+
+// ClearCollectionEntries clears all "collection_entries" edges to the CollectionEntry entity.
+func (cu *CollectionUpdate) ClearCollectionEntries() *CollectionUpdate {
+	cu.mutation.ClearCollectionEntries()
+	return cu
+}
+
+// RemoveCollectionEntryIDs removes the "collection_entries" edge to CollectionEntry entities by IDs.
+func (cu *CollectionUpdate) RemoveCollectionEntryIDs(ids ...int) *CollectionUpdate {
+	cu.mutation.RemoveCollectionEntryIDs(ids...)
+	return cu
+}
+
+// RemoveCollectionEntries removes "collection_entries" edges to CollectionEntry entities.
+func (cu *CollectionUpdate) RemoveCollectionEntries(c ...*CollectionEntry) *CollectionUpdate {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cu.RemoveCollectionEntryIDs(ids...)
 }
 
 // ClearFeeds clears all "feeds" edges to the Feed entity.
@@ -238,6 +275,60 @@ func (cu *CollectionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if cu.mutation.CollectionEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   collection.CollectionEntriesTable,
+			Columns: collection.CollectionEntriesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: collectionentry.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.RemovedCollectionEntriesIDs(); len(nodes) > 0 && !cu.mutation.CollectionEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   collection.CollectionEntriesTable,
+			Columns: collection.CollectionEntriesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: collectionentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.CollectionEntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   collection.CollectionEntriesTable,
+			Columns: collection.CollectionEntriesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: collectionentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if cu.mutation.FeedsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -342,6 +433,21 @@ func (cuo *CollectionUpdateOne) SetUser(u *User) *CollectionUpdateOne {
 	return cuo.SetUserID(u.ID)
 }
 
+// AddCollectionEntryIDs adds the "collection_entries" edge to the CollectionEntry entity by IDs.
+func (cuo *CollectionUpdateOne) AddCollectionEntryIDs(ids ...int) *CollectionUpdateOne {
+	cuo.mutation.AddCollectionEntryIDs(ids...)
+	return cuo
+}
+
+// AddCollectionEntries adds the "collection_entries" edges to the CollectionEntry entity.
+func (cuo *CollectionUpdateOne) AddCollectionEntries(c ...*CollectionEntry) *CollectionUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cuo.AddCollectionEntryIDs(ids...)
+}
+
 // AddFeedIDs adds the "feeds" edge to the Feed entity by IDs.
 func (cuo *CollectionUpdateOne) AddFeedIDs(ids ...int) *CollectionUpdateOne {
 	cuo.mutation.AddFeedIDs(ids...)
@@ -366,6 +472,27 @@ func (cuo *CollectionUpdateOne) Mutation() *CollectionMutation {
 func (cuo *CollectionUpdateOne) ClearUser() *CollectionUpdateOne {
 	cuo.mutation.ClearUser()
 	return cuo
+}
+
+// ClearCollectionEntries clears all "collection_entries" edges to the CollectionEntry entity.
+func (cuo *CollectionUpdateOne) ClearCollectionEntries() *CollectionUpdateOne {
+	cuo.mutation.ClearCollectionEntries()
+	return cuo
+}
+
+// RemoveCollectionEntryIDs removes the "collection_entries" edge to CollectionEntry entities by IDs.
+func (cuo *CollectionUpdateOne) RemoveCollectionEntryIDs(ids ...int) *CollectionUpdateOne {
+	cuo.mutation.RemoveCollectionEntryIDs(ids...)
+	return cuo
+}
+
+// RemoveCollectionEntries removes "collection_entries" edges to CollectionEntry entities.
+func (cuo *CollectionUpdateOne) RemoveCollectionEntries(c ...*CollectionEntry) *CollectionUpdateOne {
+	ids := make([]int, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cuo.RemoveCollectionEntryIDs(ids...)
 }
 
 // ClearFeeds clears all "feeds" edges to the Feed entity.
@@ -535,6 +662,60 @@ func (cuo *CollectionUpdateOne) sqlSave(ctx context.Context) (_node *Collection,
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cuo.mutation.CollectionEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   collection.CollectionEntriesTable,
+			Columns: collection.CollectionEntriesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: collectionentry.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.RemovedCollectionEntriesIDs(); len(nodes) > 0 && !cuo.mutation.CollectionEntriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   collection.CollectionEntriesTable,
+			Columns: collection.CollectionEntriesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: collectionentry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.CollectionEntriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   collection.CollectionEntriesTable,
+			Columns: collection.CollectionEntriesPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: collectionentry.FieldID,
 				},
 			},
 		}

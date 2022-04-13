@@ -10,6 +10,7 @@ import (
 	"doublequote/ent/migrate"
 
 	"doublequote/ent/collection"
+	"doublequote/ent/collectionentry"
 	"doublequote/ent/entry"
 	"doublequote/ent/feed"
 	"doublequote/ent/user"
@@ -26,6 +27,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Collection is the client for interacting with the Collection builders.
 	Collection *CollectionClient
+	// CollectionEntry is the client for interacting with the CollectionEntry builders.
+	CollectionEntry *CollectionEntryClient
 	// Entry is the client for interacting with the Entry builders.
 	Entry *EntryClient
 	// Feed is the client for interacting with the Feed builders.
@@ -46,6 +49,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Collection = NewCollectionClient(c.config)
+	c.CollectionEntry = NewCollectionEntryClient(c.config)
 	c.Entry = NewEntryClient(c.config)
 	c.Feed = NewFeedClient(c.config)
 	c.User = NewUserClient(c.config)
@@ -80,12 +84,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:        ctx,
-		config:     cfg,
-		Collection: NewCollectionClient(cfg),
-		Entry:      NewEntryClient(cfg),
-		Feed:       NewFeedClient(cfg),
-		User:       NewUserClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Collection:      NewCollectionClient(cfg),
+		CollectionEntry: NewCollectionEntryClient(cfg),
+		Entry:           NewEntryClient(cfg),
+		Feed:            NewFeedClient(cfg),
+		User:            NewUserClient(cfg),
 	}, nil
 }
 
@@ -103,12 +108,13 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:        ctx,
-		config:     cfg,
-		Collection: NewCollectionClient(cfg),
-		Entry:      NewEntryClient(cfg),
-		Feed:       NewFeedClient(cfg),
-		User:       NewUserClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Collection:      NewCollectionClient(cfg),
+		CollectionEntry: NewCollectionEntryClient(cfg),
+		Entry:           NewEntryClient(cfg),
+		Feed:            NewFeedClient(cfg),
+		User:            NewUserClient(cfg),
 	}, nil
 }
 
@@ -139,6 +145,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Collection.Use(hooks...)
+	c.CollectionEntry.Use(hooks...)
 	c.Entry.Use(hooks...)
 	c.Feed.Use(hooks...)
 	c.User.Use(hooks...)
@@ -245,6 +252,22 @@ func (c *CollectionClient) QueryUser(co *Collection) *UserQuery {
 	return query
 }
 
+// QueryCollectionEntries queries the collection_entries edge of a Collection.
+func (c *CollectionClient) QueryCollectionEntries(co *Collection) *CollectionEntryQuery {
+	query := &CollectionEntryQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(collection.Table, collection.FieldID, id),
+			sqlgraph.To(collectionentry.Table, collectionentry.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, collection.CollectionEntriesTable, collection.CollectionEntriesPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryFeeds queries the feeds edge of a Collection.
 func (c *CollectionClient) QueryFeeds(co *Collection) *FeedQuery {
 	query := &FeedQuery{config: c.config}
@@ -264,6 +287,128 @@ func (c *CollectionClient) QueryFeeds(co *Collection) *FeedQuery {
 // Hooks returns the client hooks.
 func (c *CollectionClient) Hooks() []Hook {
 	return c.hooks.Collection
+}
+
+// CollectionEntryClient is a client for the CollectionEntry schema.
+type CollectionEntryClient struct {
+	config
+}
+
+// NewCollectionEntryClient returns a client for the CollectionEntry from the given config.
+func NewCollectionEntryClient(c config) *CollectionEntryClient {
+	return &CollectionEntryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `collectionentry.Hooks(f(g(h())))`.
+func (c *CollectionEntryClient) Use(hooks ...Hook) {
+	c.hooks.CollectionEntry = append(c.hooks.CollectionEntry, hooks...)
+}
+
+// Create returns a create builder for CollectionEntry.
+func (c *CollectionEntryClient) Create() *CollectionEntryCreate {
+	mutation := newCollectionEntryMutation(c.config, OpCreate)
+	return &CollectionEntryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CollectionEntry entities.
+func (c *CollectionEntryClient) CreateBulk(builders ...*CollectionEntryCreate) *CollectionEntryCreateBulk {
+	return &CollectionEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CollectionEntry.
+func (c *CollectionEntryClient) Update() *CollectionEntryUpdate {
+	mutation := newCollectionEntryMutation(c.config, OpUpdate)
+	return &CollectionEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CollectionEntryClient) UpdateOne(ce *CollectionEntry) *CollectionEntryUpdateOne {
+	mutation := newCollectionEntryMutation(c.config, OpUpdateOne, withCollectionEntry(ce))
+	return &CollectionEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CollectionEntryClient) UpdateOneID(id int) *CollectionEntryUpdateOne {
+	mutation := newCollectionEntryMutation(c.config, OpUpdateOne, withCollectionEntryID(id))
+	return &CollectionEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CollectionEntry.
+func (c *CollectionEntryClient) Delete() *CollectionEntryDelete {
+	mutation := newCollectionEntryMutation(c.config, OpDelete)
+	return &CollectionEntryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *CollectionEntryClient) DeleteOne(ce *CollectionEntry) *CollectionEntryDeleteOne {
+	return c.DeleteOneID(ce.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *CollectionEntryClient) DeleteOneID(id int) *CollectionEntryDeleteOne {
+	builder := c.Delete().Where(collectionentry.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CollectionEntryDeleteOne{builder}
+}
+
+// Query returns a query builder for CollectionEntry.
+func (c *CollectionEntryClient) Query() *CollectionEntryQuery {
+	return &CollectionEntryQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a CollectionEntry entity by its id.
+func (c *CollectionEntryClient) Get(ctx context.Context, id int) (*CollectionEntry, error) {
+	return c.Query().Where(collectionentry.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CollectionEntryClient) GetX(ctx context.Context, id int) *CollectionEntry {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCollection queries the collection edge of a CollectionEntry.
+func (c *CollectionEntryClient) QueryCollection(ce *CollectionEntry) *CollectionQuery {
+	query := &CollectionQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := ce.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(collectionentry.Table, collectionentry.FieldID, id),
+			sqlgraph.To(collection.Table, collection.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, collectionentry.CollectionTable, collectionentry.CollectionPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(ce.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEntry queries the entry edge of a CollectionEntry.
+func (c *CollectionEntryClient) QueryEntry(ce *CollectionEntry) *EntryQuery {
+	query := &EntryQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := ce.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(collectionentry.Table, collectionentry.FieldID, id),
+			sqlgraph.To(entry.Table, entry.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, collectionentry.EntryTable, collectionentry.EntryPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(ce.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CollectionEntryClient) Hooks() []Hook {
+	return c.hooks.CollectionEntry
 }
 
 // EntryClient is a client for the Entry schema.
@@ -360,6 +505,22 @@ func (c *EntryClient) QueryFeed(e *Entry) *FeedQuery {
 			sqlgraph.From(entry.Table, entry.FieldID, id),
 			sqlgraph.To(feed.Table, feed.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, entry.FeedTable, entry.FeedColumn),
+		)
+		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCollectionEntries queries the collection_entries edge of a Entry.
+func (c *EntryClient) QueryCollectionEntries(e *Entry) *CollectionEntryQuery {
+	query := &CollectionEntryQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := e.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entry.Table, entry.FieldID, id),
+			sqlgraph.To(collectionentry.Table, collectionentry.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, entry.CollectionEntriesTable, entry.CollectionEntriesPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
 		return fromV, nil

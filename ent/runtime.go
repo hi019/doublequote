@@ -4,6 +4,7 @@ package ent
 
 import (
 	"doublequote/ent/collection"
+	"doublequote/ent/collectionentry"
 	"doublequote/ent/entry"
 	"doublequote/ent/feed"
 	"doublequote/ent/schema"
@@ -27,6 +28,22 @@ func init() {
 	collection.DefaultUpdatedAt = collectionDescUpdatedAt.Default.(func() time.Time)
 	// collection.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	collection.UpdateDefaultUpdatedAt = collectionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	collectionentryFields := schema.CollectionEntry{}.Fields()
+	_ = collectionentryFields
+	// collectionentryDescIsRead is the schema descriptor for is_read field.
+	collectionentryDescIsRead := collectionentryFields[0].Descriptor()
+	// collectionentry.DefaultIsRead holds the default value on creation for the is_read field.
+	collectionentry.DefaultIsRead = collectionentryDescIsRead.Default.(bool)
+	// collectionentryDescCreatedAt is the schema descriptor for created_at field.
+	collectionentryDescCreatedAt := collectionentryFields[3].Descriptor()
+	// collectionentry.DefaultCreatedAt holds the default value on creation for the created_at field.
+	collectionentry.DefaultCreatedAt = collectionentryDescCreatedAt.Default.(func() time.Time)
+	// collectionentryDescUpdatedAt is the schema descriptor for updated_at field.
+	collectionentryDescUpdatedAt := collectionentryFields[4].Descriptor()
+	// collectionentry.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	collectionentry.DefaultUpdatedAt = collectionentryDescUpdatedAt.Default.(func() time.Time)
+	// collectionentry.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	collectionentry.UpdateDefaultUpdatedAt = collectionentryDescUpdatedAt.UpdateDefault.(func() time.Time)
 	entryFields := schema.Entry{}.Fields()
 	_ = entryFields
 	// entryDescCreatedAt is the schema descriptor for created_at field.

@@ -36,5 +36,6 @@ func (Entry) Edges() []ent.Edge {
 		edge.From("feed", Feed.Type).
 			Ref("entries").
 			Unique(),
+		edge.To("collection_entries", CollectionEntry.Type),
 	}
 }

@@ -7,6 +7,11 @@ func (c *CollectionQuery) With(wf func(q *CollectionQuery)) *CollectionQuery {
 	return c
 }
 
+func (ce *CollectionEntryQuery) With(wf func(q *CollectionEntryQuery)) *CollectionEntryQuery {
+	wf(ce)
+	return ce
+}
+
 func (e *EntryQuery) With(wf func(q *EntryQuery)) *EntryQuery {
 	wf(e)
 	return e

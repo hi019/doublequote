@@ -21,6 +21,19 @@ func (f CollectionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return f(ctx, mv)
 }
 
+// The CollectionEntryFunc type is an adapter to allow the use of ordinary
+// function as CollectionEntry mutator.
+type CollectionEntryFunc func(context.Context, *ent.CollectionEntryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CollectionEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.CollectionEntryMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CollectionEntryMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The EntryFunc type is an adapter to allow the use of ordinary
 // function as Entry mutator.
 type EntryFunc func(context.Context, *ent.EntryMutation) (ent.Value, error)

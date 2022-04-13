@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"doublequote/pkg/domain"
+	"doublequote/pkg/job"
 	"go.uber.org/fx"
 )
 
@@ -14,8 +15,7 @@ type Service struct {
 	eventService  domain.EventService
 	emailService  domain.EmailService
 	cryptoService domain.CryptoService
-	reaperService domain.ReaperService
-	ingestService domain.IngestService
+	ingestJob     job.IngestJob
 
 	cfg domain.Config
 }
@@ -25,15 +25,14 @@ func NewService(
 	eventService domain.EventService,
 	emailService domain.EmailService,
 	cryptoService domain.CryptoService,
-	reaperService domain.ReaperService,
-	ingestService domain.IngestService,
+	ingestJob *job.IngestJob,
 	cfg domain.Config,
 ) *Service {
 	s := &Service{
 		eventService:  eventService,
 		emailService:  emailService,
 		cryptoService: cryptoService,
-		reaperService: reaperService,
+		ingestJob:     *ingestJob,
 		cfg:           cfg,
 	}
 
@@ -53,20 +52,19 @@ func (s *Service) start() error {
 		})
 	}
 
-	s.eventService.Subscribe("reaper", func(_ domain.Event) error {
-		return s.reaperService.Run()
-	})
-	if err := s.eventService.PublishPeriodic("reaper", "", nil); err != nil {
-		return err
-	}
-
-	//s.eventService.Subscribe("ingest", func(_ domain.Event) error {
-	//	s.ingestService.Start()
-	//	return nil
+	//s.eventService.Subscribe("reaper", func(_ domain.Event) error {
+	//	return s.reaperService.Run()
 	//})
-	//if err := s.eventService.PublishPeriodic("ingest", "", nil); err != nil {
+	//if err := s.eventService.PublishPeriodic("reaper", "", nil); err != nil {
 	//	return err
 	//}
+
+	s.eventService.Subscribe("ingest", func(e domain.Event) error {
+		return s.ingestJob.Run()
+	})
+	if err := s.eventService.Publish("ingest", ""); err != nil {
+		return err
+	}
 
 	return nil
 }

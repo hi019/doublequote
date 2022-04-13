@@ -405,6 +405,34 @@ func HasUserWith(preds ...predicate.User) predicate.Collection {
 	})
 }
 
+// HasCollectionEntries applies the HasEdge predicate on the "collection_entries" edge.
+func HasCollectionEntries() predicate.Collection {
+	return predicate.Collection(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(CollectionEntriesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, CollectionEntriesTable, CollectionEntriesPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCollectionEntriesWith applies the HasEdge predicate on the "collection_entries" edge with a given conditions (other predicates).
+func HasCollectionEntriesWith(preds ...predicate.CollectionEntry) predicate.Collection {
+	return predicate.Collection(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(CollectionEntriesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, CollectionEntriesTable, CollectionEntriesPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasFeeds applies the HasEdge predicate on the "feeds" edge.
 func HasFeeds() predicate.Collection {
 	return predicate.Collection(func(s *sql.Selector) {

@@ -2,7 +2,7 @@ import { MenuIcon, UserCircleIcon, XIcon } from "@heroicons/react/outline";
 import { Disclosure, Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import classNames from "classnames";
-import { Button } from "../../shared/components/Button";
+import { Button } from "../../components/Button";
 
 // From https://tailwindui.com/components/application-ui/navigation/navbars#component-70a9bdf83ef2c8568c5cddf6c39c2331
 // Thanks Tailwind!

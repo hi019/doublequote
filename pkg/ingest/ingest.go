@@ -12,6 +12,8 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
+var _ domain.IngestService = (*Service)(nil)
+
 type Service struct {
 	feedService    domain.FeedService
 	entryService   domain.EntryService

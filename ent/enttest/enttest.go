@@ -50,7 +50,7 @@ func newOptions(opts []Option) *options {
 	return o
 }
 
-// Open calls ent.open and auto-run migration.
+// Open calls ent.Open and auto-run migration.
 func Open(t TestingT, driverName, dataSourceName string, opts ...Option) *ent.Client {
 	o := newOptions(opts)
 	c, err := ent.Open(driverName, dataSourceName, o.opts...)

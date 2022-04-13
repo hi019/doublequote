@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// Collection is the client for interacting with the Collection builders.
 	Collection *CollectionClient
+	// CollectionEntry is the client for interacting with the CollectionEntry builders.
+	CollectionEntry *CollectionEntryClient
 	// Entry is the client for interacting with the Entry builders.
 	Entry *EntryClient
 	// Feed is the client for interacting with the Feed builders.
@@ -156,6 +158,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Collection = NewCollectionClient(tx.config)
+	tx.CollectionEntry = NewCollectionEntryClient(tx.config)
 	tx.Entry = NewEntryClient(tx.config)
 	tx.Feed = NewFeedClient(tx.config)
 	tx.User = NewUserClient(tx.config)

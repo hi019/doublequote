@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	domain "doublequote/pkg/domain"
+	"doublequote/pkg/domain"
 	"github.com/hibiken/asynq"
 	"go.uber.org/fx"
 )

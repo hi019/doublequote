@@ -3,23 +3,23 @@ package smtp
 import (
 	"net/smtp"
 
-	dq "doublequote/pkg/domain"
+	"doublequote/pkg/domain"
 	"github.com/jordan-wright/email"
 )
 
-var _ dq.EmailService = (*EmailService)(nil)
+var _ domain.EmailService = (*EmailService)(nil)
 
 type EmailService struct {
 	addr string
 	auth smtp.Auth
 }
 
-func NewEmailService(addr, identity, username, password, host string) *EmailService {
+func NewEmailService(cfg domain.Config) *EmailService {
 	e := EmailService{
-		addr: addr,
+		addr: cfg.SMTP.URL,
 	}
 
-	e.auth = smtp.PlainAuth(identity, username, password, host)
+	e.auth = smtp.PlainAuth(cfg.SMTP.Identity, cfg.SMTP.Username, cfg.SMTP.Password, cfg.SMTP.Host)
 
 	return &e
 }

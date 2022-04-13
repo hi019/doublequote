@@ -9,6 +9,9 @@ import (
 // Collection is the predicate function for collection builders.
 type Collection func(*sql.Selector)
 
+// CollectionEntry is the predicate function for collectionentry builders.
+type CollectionEntry func(*sql.Selector)
+
 // Entry is the predicate function for entry builders.
 type Entry func(*sql.Selector)
 

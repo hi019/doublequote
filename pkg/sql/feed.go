@@ -42,7 +42,8 @@ func (s *FeedService) FindFeeds(ctx context.Context, filter domain.FeedFilter, i
 			ifPresent(feed.NameEQ, filter.Name),
 			ifPresent(feed.DomainEQ, filter.Domain),
 			ifPresent(feed.RssURLEQ, filter.RssURL),
-			feed.HasCollectionsWith(ifPresent(collection.IDEQ, filter.CollectionID)),
+			// TODO add this to to other FindXs
+			maybeHasRelation(filter.CollectionID, feed.HasCollectionsWith, ifPresent(collection.IDEQ, filter.CollectionID)),
 		).
 		With(withFeedInclude(include)).
 		Offset(filter.Offset).

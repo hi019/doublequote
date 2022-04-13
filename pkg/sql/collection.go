@@ -5,6 +5,7 @@ import (
 
 	"doublequote/ent"
 	"doublequote/ent/collection"
+	"doublequote/ent/feed"
 	"doublequote/ent/user"
 	"doublequote/pkg/domain"
 )
@@ -57,6 +58,7 @@ func (s *CollectionService) FindCollection(ctx context.Context, filter domain.Co
 			ifPresent(collection.IDEQ, filter.ID),
 			ifPresent(collection.NameEQ, filter.Name),
 			collection.HasUserWith(ifPresent(user.IDEQ, filter.UserID)),
+			collection.HasFeedsWith(ifPresent(feed.IDEQ, filter.FeedID)),
 		).
 		First(ctx)
 

@@ -4,6 +4,8 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
+	"doublequote/ent/collectionentry"
 	"doublequote/ent/entry"
 	"doublequote/ent/feed"
 	"doublequote/ent/predicate"
@@ -26,8 +28,9 @@ type EntryQuery struct {
 	fields     []string
 	predicates []predicate.Entry
 	// eager-loading edges.
-	withFeed *FeedQuery
-	withFKs  bool
+	withFeed              *FeedQuery
+	withCollectionEntries *CollectionEntryQuery
+	withFKs               bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -79,6 +82,28 @@ func (eq *EntryQuery) QueryFeed() *FeedQuery {
 			sqlgraph.From(entry.Table, entry.FieldID, selector),
 			sqlgraph.To(feed.Table, feed.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, entry.FeedTable, entry.FeedColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(eq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCollectionEntries chains the current query on the "collection_entries" edge.
+func (eq *EntryQuery) QueryCollectionEntries() *CollectionEntryQuery {
+	query := &CollectionEntryQuery{config: eq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := eq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := eq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entry.Table, entry.FieldID, selector),
+			sqlgraph.To(collectionentry.Table, collectionentry.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, entry.CollectionEntriesTable, entry.CollectionEntriesPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(eq.driver.Dialect(), step)
 		return fromU, nil
@@ -262,12 +287,13 @@ func (eq *EntryQuery) Clone() *EntryQuery {
 		return nil
 	}
 	return &EntryQuery{
-		config:     eq.config,
-		limit:      eq.limit,
-		offset:     eq.offset,
-		order:      append([]OrderFunc{}, eq.order...),
-		predicates: append([]predicate.Entry{}, eq.predicates...),
-		withFeed:   eq.withFeed.Clone(),
+		config:                eq.config,
+		limit:                 eq.limit,
+		offset:                eq.offset,
+		order:                 append([]OrderFunc{}, eq.order...),
+		predicates:            append([]predicate.Entry{}, eq.predicates...),
+		withFeed:              eq.withFeed.Clone(),
+		withCollectionEntries: eq.withCollectionEntries.Clone(),
 		// clone intermediate query.
 		sql:  eq.sql.Clone(),
 		path: eq.path,
@@ -282,6 +308,17 @@ func (eq *EntryQuery) WithFeed(opts ...func(*FeedQuery)) *EntryQuery {
 		opt(query)
 	}
 	eq.withFeed = query
+	return eq
+}
+
+// WithCollectionEntries tells the query-builder to eager-load the nodes that are connected to
+// the "collection_entries" edge. The optional arguments are used to configure the query builder of the edge.
+func (eq *EntryQuery) WithCollectionEntries(opts ...func(*CollectionEntryQuery)) *EntryQuery {
+	query := &CollectionEntryQuery{config: eq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	eq.withCollectionEntries = query
 	return eq
 }
 
@@ -351,8 +388,9 @@ func (eq *EntryQuery) sqlAll(ctx context.Context) ([]*Entry, error) {
 		nodes       = []*Entry{}
 		withFKs     = eq.withFKs
 		_spec       = eq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			eq.withFeed != nil,
+			eq.withCollectionEntries != nil,
 		}
 	)
 	if eq.withFeed != nil {
@@ -406,6 +444,71 @@ func (eq *EntryQuery) sqlAll(ctx context.Context) ([]*Entry, error) {
 			}
 			for i := range nodes {
 				nodes[i].Edges.Feed = n
+			}
+		}
+	}
+
+	if query := eq.withCollectionEntries; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		ids := make(map[int]*Entry, len(nodes))
+		for _, node := range nodes {
+			ids[node.ID] = node
+			fks = append(fks, node.ID)
+			node.Edges.CollectionEntries = []*CollectionEntry{}
+		}
+		var (
+			edgeids []int
+			edges   = make(map[int][]*Entry)
+		)
+		_spec := &sqlgraph.EdgeQuerySpec{
+			Edge: &sqlgraph.EdgeSpec{
+				Inverse: false,
+				Table:   entry.CollectionEntriesTable,
+				Columns: entry.CollectionEntriesPrimaryKey,
+			},
+			Predicate: func(s *sql.Selector) {
+				s.Where(sql.InValues(entry.CollectionEntriesPrimaryKey[0], fks...))
+			},
+			ScanValues: func() [2]interface{} {
+				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
+			},
+			Assign: func(out, in interface{}) error {
+				eout, ok := out.(*sql.NullInt64)
+				if !ok || eout == nil {
+					return fmt.Errorf("unexpected id value for edge-out")
+				}
+				ein, ok := in.(*sql.NullInt64)
+				if !ok || ein == nil {
+					return fmt.Errorf("unexpected id value for edge-in")
+				}
+				outValue := int(eout.Int64)
+				inValue := int(ein.Int64)
+				node, ok := ids[outValue]
+				if !ok {
+					return fmt.Errorf("unexpected node id in edges: %v", outValue)
+				}
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
+				edges[inValue] = append(edges[inValue], node)
+				return nil
+			},
+		}
+		if err := sqlgraph.QueryEdges(ctx, eq.driver, _spec); err != nil {
+			return nil, fmt.Errorf(`query edges "collection_entries": %w`, err)
+		}
+		query.Where(collectionentry.IDIn(edgeids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := edges[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected "collection_entries" node returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.CollectionEntries = append(nodes[i].Edges.CollectionEntries, n)
 			}
 		}
 	}

@@ -10,7 +10,7 @@ import (
 // Option function to configure the client.
 type Option func(*config)
 
-// config is the configuration for the client and its builder.
+// Config is the configuration for the client and its builder.
 type config struct {
 	// driver used for executing database requests.
 	driver dialect.Driver
@@ -24,10 +24,11 @@ type config struct {
 
 // hooks per client, for fast access.
 type hooks struct {
-	Collection []ent.Hook
-	Entry      []ent.Hook
-	Feed       []ent.Hook
-	User       []ent.Hook
+	Collection      []ent.Hook
+	CollectionEntry []ent.Hook
+	Entry           []ent.Hook
+	Feed            []ent.Hook
+	User            []ent.Hook
 }
 
 // Options applies the options on the config object.

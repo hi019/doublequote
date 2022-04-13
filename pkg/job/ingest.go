@@ -10,10 +10,11 @@ import (
 )
 
 type IngestJob struct {
-	svc            domain.IngestService
-	feedService    domain.FeedService
-	storageService domain.StorageService
-	entryService   domain.EntryService
+	svc               domain.IngestService
+	feedService       domain.FeedService
+	storageService    domain.StorageService
+	entryService      domain.EntryService
+	collectionService domain.CollectionService
 }
 
 func NewIngestJob(
@@ -21,8 +22,9 @@ func NewIngestJob(
 	feedService domain.FeedService,
 	storageService domain.StorageService,
 	entryService domain.EntryService,
+	collectionService domain.CollectionService,
 ) *IngestJob {
-	return &IngestJob{svc: svc, feedService: feedService, storageService: storageService, entryService: entryService}
+	return &IngestJob{svc: svc, feedService: feedService, storageService: storageService, entryService: entryService, collectionService: collectionService}
 }
 
 func (j *IngestJob) Run() error {
@@ -59,7 +61,10 @@ func (j *IngestJob) ingestFeed(feed *domain.Feed) error {
 			continue
 		}
 
-		content := j.svc.GetEntryContent(entry)
+		content, err := j.svc.GetEntryContent(entry)
+		if err != nil {
+			return err
+		}
 
 		key := fmt.Sprintf("content_%s", uuid.New().String())
 		if err := j.storageService.Set(context.Background(), key, []byte(content)); err != nil {
@@ -75,9 +80,22 @@ func (j *IngestJob) ingestFeed(feed *domain.Feed) error {
 	return err
 }
 
+//func (j *IngestJob) createCollectionEntries(feed domain.Feed, entry domain.Entry) error {
+//	collection, err := j.collectionService.FindCollection(
+//		context.Background(),
+//		domain.CollectionFilter{FeedID: utils.Ptr(feed.ID)},
+//		domain.CollectionInclude{},
+//	)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return nil
+//}
+
 func (j *IngestJob) shouldSave(entry *domain.Entry) bool {
 	// TODO maybe we shouldn't ignore the error here..
-	found, _ := j.entryService.FindEntry(context.TODO(), domain.EntryFilter{URL: &entry.URL}, domain.EntryInclude{})
+	_, err := j.entryService.FindEntry(context.TODO(), domain.EntryFilter{URL: &entry.URL}, domain.EntryInclude{})
 
-	return found.ID > 0
+	return domain.ErrorCode(err) == domain.ENOTFOUND
 }

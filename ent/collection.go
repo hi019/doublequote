@@ -33,11 +33,13 @@ type Collection struct {
 type CollectionEdges struct {
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
+	// CollectionEntries holds the value of the collection_entries edge.
+	CollectionEntries []*CollectionEntry `json:"collection_entries,omitempty"`
 	// Feeds holds the value of the feeds edge.
 	Feeds []*Feed `json:"feeds,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -54,10 +56,19 @@ func (e CollectionEdges) UserOrErr() (*User, error) {
 	return nil, &NotLoadedError{edge: "user"}
 }
 
+// CollectionEntriesOrErr returns the CollectionEntries value or an error if the edge
+// was not loaded in eager-loading.
+func (e CollectionEdges) CollectionEntriesOrErr() ([]*CollectionEntry, error) {
+	if e.loadedTypes[1] {
+		return e.CollectionEntries, nil
+	}
+	return nil, &NotLoadedError{edge: "collection_entries"}
+}
+
 // FeedsOrErr returns the Feeds value or an error if the edge
 // was not loaded in eager-loading.
 func (e CollectionEdges) FeedsOrErr() ([]*Feed, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Feeds, nil
 	}
 	return nil, &NotLoadedError{edge: "feeds"}
@@ -130,6 +141,11 @@ func (c *Collection) assignValues(columns []string, values []interface{}) error 
 // QueryUser queries the "user" edge of the Collection entity.
 func (c *Collection) QueryUser() *UserQuery {
 	return (&CollectionClient{config: c.config}).QueryUser(c)
+}
+
+// QueryCollectionEntries queries the "collection_entries" edge of the Collection entity.
+func (c *Collection) QueryCollectionEntries() *CollectionEntryQuery {
+	return (&CollectionClient{config: c.config}).QueryCollectionEntries(c)
 }
 
 // QueryFeeds queries the "feeds" edge of the Collection entity.

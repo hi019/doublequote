@@ -23,7 +23,7 @@ type Config struct {
 
 	Redis struct {
 		URL string `toml:"url"`
-	}
+	} `mapstructure:"redis"`
 
 	SMTP struct {
 		URL      string `toml:"url"`
@@ -31,7 +31,7 @@ type Config struct {
 		Identity string `toml:"identity"`
 		Username string `toml:"url"`
 		Password string `toml:"url"`
-	}
+	} `mapstructure:"smtp"`
 }
 
 func (c *Config) BaseURL() string {

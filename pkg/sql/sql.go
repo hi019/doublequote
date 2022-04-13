@@ -43,7 +43,6 @@ func NewSQL(lc fx.Lifecycle, cfg domain.Config) *SQL {
 	return s
 }
 
-// Open opens the database connection
 func (sql *SQL) open() error {
 	c, err := createClient(sql.dbUrl)
 	if err != nil {
@@ -61,7 +60,6 @@ func (sql *SQL) open() error {
 	return nil
 }
 
-// Close closes the database connection
 func (sql *SQL) close() error {
 	return sql.client.Close()
 }
@@ -76,6 +74,16 @@ func createClient(fileName string) (*ent.Client, error) {
 func ifPresent[V any, P ~func(*entsql.Selector)](f func(V) P, v *V) P {
 	if v != nil {
 		return f(*v)
+	} else {
+		return func(*entsql.Selector) {}
+	}
+}
+
+//func HasCollectionsWith(preds ...predicate.Collection) predicate.Feed {
+
+func maybeHasRelation[V any, P ~func(*entsql.Selector), A any](v *V, f func(...A) P, args ...A) P {
+	if v != nil {
+		return f(args...)
 	} else {
 		return func(*entsql.Selector) {}
 	}

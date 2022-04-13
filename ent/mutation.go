@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"doublequote/ent/collection"
+	"doublequote/ent/collectionentry"
 	"doublequote/ent/entry"
 	"doublequote/ent/feed"
 	"doublequote/ent/predicate"
@@ -26,30 +27,34 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeCollection = "Collection"
-	TypeEntry      = "Entry"
-	TypeFeed       = "Feed"
-	TypeUser       = "User"
+	TypeCollection      = "Collection"
+	TypeCollectionEntry = "CollectionEntry"
+	TypeEntry           = "Entry"
+	TypeFeed            = "Feed"
+	TypeUser            = "User"
 )
 
 // CollectionMutation represents an operation that mutates the Collection nodes in the graph.
 type CollectionMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	name          *string
-	created_at    *time.Time
-	updated_at    *time.Time
-	clearedFields map[string]struct{}
-	user          *int
-	cleareduser   bool
-	feeds         map[int]struct{}
-	removedfeeds  map[int]struct{}
-	clearedfeeds  bool
-	done          bool
-	oldValue      func(context.Context) (*Collection, error)
-	predicates    []predicate.Collection
+	op                        Op
+	typ                       string
+	id                        *int
+	name                      *string
+	created_at                *time.Time
+	updated_at                *time.Time
+	clearedFields             map[string]struct{}
+	user                      *int
+	cleareduser               bool
+	collection_entries        map[int]struct{}
+	removedcollection_entries map[int]struct{}
+	clearedcollection_entries bool
+	feeds                     map[int]struct{}
+	removedfeeds              map[int]struct{}
+	clearedfeeds              bool
+	done                      bool
+	oldValue                  func(context.Context) (*Collection, error)
+	predicates                []predicate.Collection
 }
 
 var _ ent.Mutation = (*CollectionMutation)(nil)
@@ -297,6 +302,60 @@ func (m *CollectionMutation) ResetUser() {
 	m.cleareduser = false
 }
 
+// AddCollectionEntryIDs adds the "collection_entries" edge to the CollectionEntry entity by ids.
+func (m *CollectionMutation) AddCollectionEntryIDs(ids ...int) {
+	if m.collection_entries == nil {
+		m.collection_entries = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.collection_entries[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCollectionEntries clears the "collection_entries" edge to the CollectionEntry entity.
+func (m *CollectionMutation) ClearCollectionEntries() {
+	m.clearedcollection_entries = true
+}
+
+// CollectionEntriesCleared reports if the "collection_entries" edge to the CollectionEntry entity was cleared.
+func (m *CollectionMutation) CollectionEntriesCleared() bool {
+	return m.clearedcollection_entries
+}
+
+// RemoveCollectionEntryIDs removes the "collection_entries" edge to the CollectionEntry entity by IDs.
+func (m *CollectionMutation) RemoveCollectionEntryIDs(ids ...int) {
+	if m.removedcollection_entries == nil {
+		m.removedcollection_entries = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.collection_entries, ids[i])
+		m.removedcollection_entries[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCollectionEntries returns the removed IDs of the "collection_entries" edge to the CollectionEntry entity.
+func (m *CollectionMutation) RemovedCollectionEntriesIDs() (ids []int) {
+	for id := range m.removedcollection_entries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CollectionEntriesIDs returns the "collection_entries" edge IDs in the mutation.
+func (m *CollectionMutation) CollectionEntriesIDs() (ids []int) {
+	for id := range m.collection_entries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCollectionEntries resets all changes to the "collection_entries" edge.
+func (m *CollectionMutation) ResetCollectionEntries() {
+	m.collection_entries = nil
+	m.clearedcollection_entries = false
+	m.removedcollection_entries = nil
+}
+
 // AddFeedIDs adds the "feeds" edge to the Feed entity by ids.
 func (m *CollectionMutation) AddFeedIDs(ids ...int) {
 	if m.feeds == nil {
@@ -503,9 +562,12 @@ func (m *CollectionMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CollectionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.user != nil {
 		edges = append(edges, collection.EdgeUser)
+	}
+	if m.collection_entries != nil {
+		edges = append(edges, collection.EdgeCollectionEntries)
 	}
 	if m.feeds != nil {
 		edges = append(edges, collection.EdgeFeeds)
@@ -521,6 +583,12 @@ func (m *CollectionMutation) AddedIDs(name string) []ent.Value {
 		if id := m.user; id != nil {
 			return []ent.Value{*id}
 		}
+	case collection.EdgeCollectionEntries:
+		ids := make([]ent.Value, 0, len(m.collection_entries))
+		for id := range m.collection_entries {
+			ids = append(ids, id)
+		}
+		return ids
 	case collection.EdgeFeeds:
 		ids := make([]ent.Value, 0, len(m.feeds))
 		for id := range m.feeds {
@@ -533,7 +601,10 @@ func (m *CollectionMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CollectionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.removedcollection_entries != nil {
+		edges = append(edges, collection.EdgeCollectionEntries)
+	}
 	if m.removedfeeds != nil {
 		edges = append(edges, collection.EdgeFeeds)
 	}
@@ -544,6 +615,12 @@ func (m *CollectionMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *CollectionMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
+	case collection.EdgeCollectionEntries:
+		ids := make([]ent.Value, 0, len(m.removedcollection_entries))
+		for id := range m.removedcollection_entries {
+			ids = append(ids, id)
+		}
+		return ids
 	case collection.EdgeFeeds:
 		ids := make([]ent.Value, 0, len(m.removedfeeds))
 		for id := range m.removedfeeds {
@@ -556,9 +633,12 @@ func (m *CollectionMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CollectionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.cleareduser {
 		edges = append(edges, collection.EdgeUser)
+	}
+	if m.clearedcollection_entries {
+		edges = append(edges, collection.EdgeCollectionEntries)
 	}
 	if m.clearedfeeds {
 		edges = append(edges, collection.EdgeFeeds)
@@ -572,6 +652,8 @@ func (m *CollectionMutation) EdgeCleared(name string) bool {
 	switch name {
 	case collection.EdgeUser:
 		return m.cleareduser
+	case collection.EdgeCollectionEntries:
+		return m.clearedcollection_entries
 	case collection.EdgeFeeds:
 		return m.clearedfeeds
 	}
@@ -596,6 +678,9 @@ func (m *CollectionMutation) ResetEdge(name string) error {
 	case collection.EdgeUser:
 		m.ResetUser()
 		return nil
+	case collection.EdgeCollectionEntries:
+		m.ResetCollectionEntries()
+		return nil
 	case collection.EdgeFeeds:
 		m.ResetFeeds()
 		return nil
@@ -603,24 +688,799 @@ func (m *CollectionMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Collection edge %s", name)
 }
 
+// CollectionEntryMutation represents an operation that mutates the CollectionEntry nodes in the graph.
+type CollectionEntryMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *int
+	is_read           *bool
+	collection_id     *int
+	addcollection_id  *int
+	entry_id          *int
+	addentry_id       *int
+	created_at        *time.Time
+	updated_at        *time.Time
+	clearedFields     map[string]struct{}
+	collection        map[int]struct{}
+	removedcollection map[int]struct{}
+	clearedcollection bool
+	entry             map[int]struct{}
+	removedentry      map[int]struct{}
+	clearedentry      bool
+	done              bool
+	oldValue          func(context.Context) (*CollectionEntry, error)
+	predicates        []predicate.CollectionEntry
+}
+
+var _ ent.Mutation = (*CollectionEntryMutation)(nil)
+
+// collectionentryOption allows management of the mutation configuration using functional options.
+type collectionentryOption func(*CollectionEntryMutation)
+
+// newCollectionEntryMutation creates new mutation for the CollectionEntry entity.
+func newCollectionEntryMutation(c config, op Op, opts ...collectionentryOption) *CollectionEntryMutation {
+	m := &CollectionEntryMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCollectionEntry,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCollectionEntryID sets the ID field of the mutation.
+func withCollectionEntryID(id int) collectionentryOption {
+	return func(m *CollectionEntryMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CollectionEntry
+		)
+		m.oldValue = func(ctx context.Context) (*CollectionEntry, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CollectionEntry.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCollectionEntry sets the old CollectionEntry of the mutation.
+func withCollectionEntry(node *CollectionEntry) collectionentryOption {
+	return func(m *CollectionEntryMutation) {
+		m.oldValue = func(context.Context) (*CollectionEntry, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CollectionEntryMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CollectionEntryMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CollectionEntryMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CollectionEntryMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CollectionEntry.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetIsRead sets the "is_read" field.
+func (m *CollectionEntryMutation) SetIsRead(b bool) {
+	m.is_read = &b
+}
+
+// IsRead returns the value of the "is_read" field in the mutation.
+func (m *CollectionEntryMutation) IsRead() (r bool, exists bool) {
+	v := m.is_read
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsRead returns the old "is_read" field's value of the CollectionEntry entity.
+// If the CollectionEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CollectionEntryMutation) OldIsRead(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsRead is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsRead requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsRead: %w", err)
+	}
+	return oldValue.IsRead, nil
+}
+
+// ResetIsRead resets all changes to the "is_read" field.
+func (m *CollectionEntryMutation) ResetIsRead() {
+	m.is_read = nil
+}
+
+// SetCollectionID sets the "collection_id" field.
+func (m *CollectionEntryMutation) SetCollectionID(i int) {
+	m.collection_id = &i
+	m.addcollection_id = nil
+}
+
+// CollectionID returns the value of the "collection_id" field in the mutation.
+func (m *CollectionEntryMutation) CollectionID() (r int, exists bool) {
+	v := m.collection_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCollectionID returns the old "collection_id" field's value of the CollectionEntry entity.
+// If the CollectionEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CollectionEntryMutation) OldCollectionID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCollectionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCollectionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCollectionID: %w", err)
+	}
+	return oldValue.CollectionID, nil
+}
+
+// AddCollectionID adds i to the "collection_id" field.
+func (m *CollectionEntryMutation) AddCollectionID(i int) {
+	if m.addcollection_id != nil {
+		*m.addcollection_id += i
+	} else {
+		m.addcollection_id = &i
+	}
+}
+
+// AddedCollectionID returns the value that was added to the "collection_id" field in this mutation.
+func (m *CollectionEntryMutation) AddedCollectionID() (r int, exists bool) {
+	v := m.addcollection_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCollectionID resets all changes to the "collection_id" field.
+func (m *CollectionEntryMutation) ResetCollectionID() {
+	m.collection_id = nil
+	m.addcollection_id = nil
+}
+
+// SetEntryID sets the "entry_id" field.
+func (m *CollectionEntryMutation) SetEntryID(i int) {
+	m.entry_id = &i
+	m.addentry_id = nil
+}
+
+// EntryID returns the value of the "entry_id" field in the mutation.
+func (m *CollectionEntryMutation) EntryID() (r int, exists bool) {
+	v := m.entry_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEntryID returns the old "entry_id" field's value of the CollectionEntry entity.
+// If the CollectionEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CollectionEntryMutation) OldEntryID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEntryID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEntryID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEntryID: %w", err)
+	}
+	return oldValue.EntryID, nil
+}
+
+// AddEntryID adds i to the "entry_id" field.
+func (m *CollectionEntryMutation) AddEntryID(i int) {
+	if m.addentry_id != nil {
+		*m.addentry_id += i
+	} else {
+		m.addentry_id = &i
+	}
+}
+
+// AddedEntryID returns the value that was added to the "entry_id" field in this mutation.
+func (m *CollectionEntryMutation) AddedEntryID() (r int, exists bool) {
+	v := m.addentry_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetEntryID resets all changes to the "entry_id" field.
+func (m *CollectionEntryMutation) ResetEntryID() {
+	m.entry_id = nil
+	m.addentry_id = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CollectionEntryMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CollectionEntryMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CollectionEntry entity.
+// If the CollectionEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CollectionEntryMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CollectionEntryMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CollectionEntryMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CollectionEntryMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CollectionEntry entity.
+// If the CollectionEntry object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CollectionEntryMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CollectionEntryMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// AddCollectionIDs adds the "collection" edge to the Collection entity by ids.
+func (m *CollectionEntryMutation) AddCollectionIDs(ids ...int) {
+	if m.collection == nil {
+		m.collection = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.collection[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCollection clears the "collection" edge to the Collection entity.
+func (m *CollectionEntryMutation) ClearCollection() {
+	m.clearedcollection = true
+}
+
+// CollectionCleared reports if the "collection" edge to the Collection entity was cleared.
+func (m *CollectionEntryMutation) CollectionCleared() bool {
+	return m.clearedcollection
+}
+
+// RemoveCollectionIDs removes the "collection" edge to the Collection entity by IDs.
+func (m *CollectionEntryMutation) RemoveCollectionIDs(ids ...int) {
+	if m.removedcollection == nil {
+		m.removedcollection = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.collection, ids[i])
+		m.removedcollection[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCollection returns the removed IDs of the "collection" edge to the Collection entity.
+func (m *CollectionEntryMutation) RemovedCollectionIDs() (ids []int) {
+	for id := range m.removedcollection {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CollectionIDs returns the "collection" edge IDs in the mutation.
+func (m *CollectionEntryMutation) CollectionIDs() (ids []int) {
+	for id := range m.collection {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCollection resets all changes to the "collection" edge.
+func (m *CollectionEntryMutation) ResetCollection() {
+	m.collection = nil
+	m.clearedcollection = false
+	m.removedcollection = nil
+}
+
+// AddEntryIDs adds the "entry" edge to the Entry entity by ids.
+func (m *CollectionEntryMutation) AddEntryIDs(ids ...int) {
+	if m.entry == nil {
+		m.entry = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.entry[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntry clears the "entry" edge to the Entry entity.
+func (m *CollectionEntryMutation) ClearEntry() {
+	m.clearedentry = true
+}
+
+// EntryCleared reports if the "entry" edge to the Entry entity was cleared.
+func (m *CollectionEntryMutation) EntryCleared() bool {
+	return m.clearedentry
+}
+
+// RemoveEntryIDs removes the "entry" edge to the Entry entity by IDs.
+func (m *CollectionEntryMutation) RemoveEntryIDs(ids ...int) {
+	if m.removedentry == nil {
+		m.removedentry = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.entry, ids[i])
+		m.removedentry[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntry returns the removed IDs of the "entry" edge to the Entry entity.
+func (m *CollectionEntryMutation) RemovedEntryIDs() (ids []int) {
+	for id := range m.removedentry {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntryIDs returns the "entry" edge IDs in the mutation.
+func (m *CollectionEntryMutation) EntryIDs() (ids []int) {
+	for id := range m.entry {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntry resets all changes to the "entry" edge.
+func (m *CollectionEntryMutation) ResetEntry() {
+	m.entry = nil
+	m.clearedentry = false
+	m.removedentry = nil
+}
+
+// Where appends a list predicates to the CollectionEntryMutation builder.
+func (m *CollectionEntryMutation) Where(ps ...predicate.CollectionEntry) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *CollectionEntryMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (CollectionEntry).
+func (m *CollectionEntryMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CollectionEntryMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.is_read != nil {
+		fields = append(fields, collectionentry.FieldIsRead)
+	}
+	if m.collection_id != nil {
+		fields = append(fields, collectionentry.FieldCollectionID)
+	}
+	if m.entry_id != nil {
+		fields = append(fields, collectionentry.FieldEntryID)
+	}
+	if m.created_at != nil {
+		fields = append(fields, collectionentry.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, collectionentry.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CollectionEntryMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case collectionentry.FieldIsRead:
+		return m.IsRead()
+	case collectionentry.FieldCollectionID:
+		return m.CollectionID()
+	case collectionentry.FieldEntryID:
+		return m.EntryID()
+	case collectionentry.FieldCreatedAt:
+		return m.CreatedAt()
+	case collectionentry.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CollectionEntryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case collectionentry.FieldIsRead:
+		return m.OldIsRead(ctx)
+	case collectionentry.FieldCollectionID:
+		return m.OldCollectionID(ctx)
+	case collectionentry.FieldEntryID:
+		return m.OldEntryID(ctx)
+	case collectionentry.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case collectionentry.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown CollectionEntry field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CollectionEntryMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case collectionentry.FieldIsRead:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsRead(v)
+		return nil
+	case collectionentry.FieldCollectionID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCollectionID(v)
+		return nil
+	case collectionentry.FieldEntryID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEntryID(v)
+		return nil
+	case collectionentry.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case collectionentry.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CollectionEntry field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CollectionEntryMutation) AddedFields() []string {
+	var fields []string
+	if m.addcollection_id != nil {
+		fields = append(fields, collectionentry.FieldCollectionID)
+	}
+	if m.addentry_id != nil {
+		fields = append(fields, collectionentry.FieldEntryID)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CollectionEntryMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case collectionentry.FieldCollectionID:
+		return m.AddedCollectionID()
+	case collectionentry.FieldEntryID:
+		return m.AddedEntryID()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CollectionEntryMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case collectionentry.FieldCollectionID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCollectionID(v)
+		return nil
+	case collectionentry.FieldEntryID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddEntryID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CollectionEntry numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CollectionEntryMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CollectionEntryMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CollectionEntryMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown CollectionEntry nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CollectionEntryMutation) ResetField(name string) error {
+	switch name {
+	case collectionentry.FieldIsRead:
+		m.ResetIsRead()
+		return nil
+	case collectionentry.FieldCollectionID:
+		m.ResetCollectionID()
+		return nil
+	case collectionentry.FieldEntryID:
+		m.ResetEntryID()
+		return nil
+	case collectionentry.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case collectionentry.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown CollectionEntry field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CollectionEntryMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.collection != nil {
+		edges = append(edges, collectionentry.EdgeCollection)
+	}
+	if m.entry != nil {
+		edges = append(edges, collectionentry.EdgeEntry)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CollectionEntryMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case collectionentry.EdgeCollection:
+		ids := make([]ent.Value, 0, len(m.collection))
+		for id := range m.collection {
+			ids = append(ids, id)
+		}
+		return ids
+	case collectionentry.EdgeEntry:
+		ids := make([]ent.Value, 0, len(m.entry))
+		for id := range m.entry {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CollectionEntryMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedcollection != nil {
+		edges = append(edges, collectionentry.EdgeCollection)
+	}
+	if m.removedentry != nil {
+		edges = append(edges, collectionentry.EdgeEntry)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CollectionEntryMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case collectionentry.EdgeCollection:
+		ids := make([]ent.Value, 0, len(m.removedcollection))
+		for id := range m.removedcollection {
+			ids = append(ids, id)
+		}
+		return ids
+	case collectionentry.EdgeEntry:
+		ids := make([]ent.Value, 0, len(m.removedentry))
+		for id := range m.removedentry {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CollectionEntryMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedcollection {
+		edges = append(edges, collectionentry.EdgeCollection)
+	}
+	if m.clearedentry {
+		edges = append(edges, collectionentry.EdgeEntry)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CollectionEntryMutation) EdgeCleared(name string) bool {
+	switch name {
+	case collectionentry.EdgeCollection:
+		return m.clearedcollection
+	case collectionentry.EdgeEntry:
+		return m.clearedentry
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CollectionEntryMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CollectionEntry unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CollectionEntryMutation) ResetEdge(name string) error {
+	switch name {
+	case collectionentry.EdgeCollection:
+		m.ResetCollection()
+		return nil
+	case collectionentry.EdgeEntry:
+		m.ResetEntry()
+		return nil
+	}
+	return fmt.Errorf("unknown CollectionEntry edge %s", name)
+}
+
 // EntryMutation represents an operation that mutates the Entry nodes in the graph.
 type EntryMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	title         *string
-	url           *string
-	author        *string
-	content_key   *string
-	created_at    *time.Time
-	updated_at    *time.Time
-	clearedFields map[string]struct{}
-	feed          *int
-	clearedfeed   bool
-	done          bool
-	oldValue      func(context.Context) (*Entry, error)
-	predicates    []predicate.Entry
+	op                        Op
+	typ                       string
+	id                        *int
+	title                     *string
+	url                       *string
+	author                    *string
+	content_key               *string
+	created_at                *time.Time
+	updated_at                *time.Time
+	clearedFields             map[string]struct{}
+	feed                      *int
+	clearedfeed               bool
+	collection_entries        map[int]struct{}
+	removedcollection_entries map[int]struct{}
+	clearedcollection_entries bool
+	done                      bool
+	oldValue                  func(context.Context) (*Entry, error)
+	predicates                []predicate.Entry
 }
 
 var _ ent.Mutation = (*EntryMutation)(nil)
@@ -976,6 +1836,60 @@ func (m *EntryMutation) ResetFeed() {
 	m.clearedfeed = false
 }
 
+// AddCollectionEntryIDs adds the "collection_entries" edge to the CollectionEntry entity by ids.
+func (m *EntryMutation) AddCollectionEntryIDs(ids ...int) {
+	if m.collection_entries == nil {
+		m.collection_entries = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.collection_entries[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCollectionEntries clears the "collection_entries" edge to the CollectionEntry entity.
+func (m *EntryMutation) ClearCollectionEntries() {
+	m.clearedcollection_entries = true
+}
+
+// CollectionEntriesCleared reports if the "collection_entries" edge to the CollectionEntry entity was cleared.
+func (m *EntryMutation) CollectionEntriesCleared() bool {
+	return m.clearedcollection_entries
+}
+
+// RemoveCollectionEntryIDs removes the "collection_entries" edge to the CollectionEntry entity by IDs.
+func (m *EntryMutation) RemoveCollectionEntryIDs(ids ...int) {
+	if m.removedcollection_entries == nil {
+		m.removedcollection_entries = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.collection_entries, ids[i])
+		m.removedcollection_entries[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCollectionEntries returns the removed IDs of the "collection_entries" edge to the CollectionEntry entity.
+func (m *EntryMutation) RemovedCollectionEntriesIDs() (ids []int) {
+	for id := range m.removedcollection_entries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CollectionEntriesIDs returns the "collection_entries" edge IDs in the mutation.
+func (m *EntryMutation) CollectionEntriesIDs() (ids []int) {
+	for id := range m.collection_entries {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCollectionEntries resets all changes to the "collection_entries" edge.
+func (m *EntryMutation) ResetCollectionEntries() {
+	m.collection_entries = nil
+	m.clearedcollection_entries = false
+	m.removedcollection_entries = nil
+}
+
 // Where appends a list predicates to the EntryMutation builder.
 func (m *EntryMutation) Where(ps ...predicate.Entry) {
 	m.predicates = append(m.predicates, ps...)
@@ -1179,9 +2093,12 @@ func (m *EntryMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *EntryMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.feed != nil {
 		edges = append(edges, entry.EdgeFeed)
+	}
+	if m.collection_entries != nil {
+		edges = append(edges, entry.EdgeCollectionEntries)
 	}
 	return edges
 }
@@ -1194,13 +2111,22 @@ func (m *EntryMutation) AddedIDs(name string) []ent.Value {
 		if id := m.feed; id != nil {
 			return []ent.Value{*id}
 		}
+	case entry.EdgeCollectionEntries:
+		ids := make([]ent.Value, 0, len(m.collection_entries))
+		for id := range m.collection_entries {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *EntryMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removedcollection_entries != nil {
+		edges = append(edges, entry.EdgeCollectionEntries)
+	}
 	return edges
 }
 
@@ -1208,15 +2134,24 @@ func (m *EntryMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *EntryMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
+	case entry.EdgeCollectionEntries:
+		ids := make([]ent.Value, 0, len(m.removedcollection_entries))
+		for id := range m.removedcollection_entries {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *EntryMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedfeed {
 		edges = append(edges, entry.EdgeFeed)
+	}
+	if m.clearedcollection_entries {
+		edges = append(edges, entry.EdgeCollectionEntries)
 	}
 	return edges
 }
@@ -1227,6 +2162,8 @@ func (m *EntryMutation) EdgeCleared(name string) bool {
 	switch name {
 	case entry.EdgeFeed:
 		return m.clearedfeed
+	case entry.EdgeCollectionEntries:
+		return m.clearedcollection_entries
 	}
 	return false
 }
@@ -1248,6 +2185,9 @@ func (m *EntryMutation) ResetEdge(name string) error {
 	switch name {
 	case entry.EdgeFeed:
 		m.ResetFeed()
+		return nil
+	case entry.EdgeCollectionEntries:
+		m.ResetCollectionEntries()
 		return nil
 	}
 	return fmt.Errorf("unknown Entry edge %s", name)
