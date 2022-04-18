@@ -14,13 +14,9 @@ test-go:
 serve:
 	go run ./cmd serve
 build-js:
-	cd frontend; yarn install; yarn build
+	cd frontend; pnpm install; pnpm build
 build-go:
 	cp -r ./frontend/build/* ./assets/frontend
 	go build -o doublequote doublequote/cmd
 gen-mock:
 	mockery --case=underscore --outpkg=mock --output=mock --name=$(service)Service --filename=$(service).go
-migrate:
-	touch data.db
-    # TODO make db url configurable
-	DATABASE_URL=file:./data.db go run github.com/prisma/prisma-client-go migrate deploy

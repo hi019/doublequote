@@ -10,16 +10,14 @@ Doublequote is not yet at MVP status, but it's under active development. Here's 
 - User login, signup, email verification and authorization
 - Feed CRUD (backend only)
 - Collection (groups of Feeds) CRUD (backend only)
-
-The main backend item left is the engine for ingesting entries from RSS feeds. After that, I'll resume work
-on the frontend.
+- RSS Entry ingestion (half done, backend only)
 
 ## Building
 
 Make sure the following dependencies are installed:
 
 - `make`
-- `yarn`
+- `pnpm`
 - `go`
 - `redis` (on the default port, 6379)
 
