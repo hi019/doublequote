@@ -2,11 +2,9 @@
 
 export DATABASE_URL = file:./data.db
 
-test: generate test-go
-build: generate build-js build-go
+test-all: generate test-go
+build-all: generate build-js build-go
 
-migrate:
-	go run github.com/prisma/prisma-client-go db push
 generate:
 	go generate ./...
 test-go:
@@ -18,5 +16,3 @@ build-js:
 build-go:
 	cp -r ./frontend/build/* ./assets/frontend
 	go build -o doublequote doublequote/cmd
-gen-mock:
-	mockery --case=underscore --outpkg=mock --output=mock --name=$(service)Service --filename=$(service).go
