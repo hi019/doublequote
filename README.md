@@ -1,4 +1,4 @@
-# Doublequote: Slogan Pending
+# Doublequote
 
 Doublequote is an RSS reader prioritizing excellent UI/UX.
 
