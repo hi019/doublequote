@@ -260,7 +260,7 @@ func (c *CollectionClient) QueryCollectionEntries(co *Collection) *CollectionEnt
 		step := sqlgraph.NewStep(
 			sqlgraph.From(collection.Table, collection.FieldID, id),
 			sqlgraph.To(collectionentry.Table, collectionentry.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, collection.CollectionEntriesTable, collection.CollectionEntriesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, collection.CollectionEntriesTable, collection.CollectionEntriesColumn),
 		)
 		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
 		return fromV, nil
@@ -382,7 +382,7 @@ func (c *CollectionEntryClient) QueryCollection(ce *CollectionEntry) *Collection
 		step := sqlgraph.NewStep(
 			sqlgraph.From(collectionentry.Table, collectionentry.FieldID, id),
 			sqlgraph.To(collection.Table, collection.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, collectionentry.CollectionTable, collectionentry.CollectionPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, collectionentry.CollectionTable, collectionentry.CollectionColumn),
 		)
 		fromV = sqlgraph.Neighbors(ce.driver.Dialect(), step)
 		return fromV, nil
@@ -398,7 +398,7 @@ func (c *CollectionEntryClient) QueryEntry(ce *CollectionEntry) *EntryQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(collectionentry.Table, collectionentry.FieldID, id),
 			sqlgraph.To(entry.Table, entry.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, collectionentry.EntryTable, collectionentry.EntryPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, collectionentry.EntryTable, collectionentry.EntryColumn),
 		)
 		fromV = sqlgraph.Neighbors(ce.driver.Dialect(), step)
 		return fromV, nil
@@ -520,7 +520,7 @@ func (c *EntryClient) QueryCollectionEntries(e *Entry) *CollectionEntryQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(entry.Table, entry.FieldID, id),
 			sqlgraph.To(collectionentry.Table, collectionentry.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, entry.CollectionEntriesTable, entry.CollectionEntriesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, entry.CollectionEntriesTable, entry.CollectionEntriesColumn),
 		)
 		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
 		return fromV, nil

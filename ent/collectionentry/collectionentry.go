@@ -27,16 +27,20 @@ const (
 	EdgeEntry = "entry"
 	// Table holds the table name of the collectionentry in the database.
 	Table = "collection_entries"
-	// CollectionTable is the table that holds the collection relation/edge. The primary key declared below.
-	CollectionTable = "collection_collection_entries"
+	// CollectionTable is the table that holds the collection relation/edge.
+	CollectionTable = "collection_entries"
 	// CollectionInverseTable is the table name for the Collection entity.
 	// It exists in this package in order to avoid circular dependency with the "collection" package.
 	CollectionInverseTable = "collections"
-	// EntryTable is the table that holds the entry relation/edge. The primary key declared below.
-	EntryTable = "entry_collection_entries"
+	// CollectionColumn is the table column denoting the collection relation/edge.
+	CollectionColumn = "collection_id"
+	// EntryTable is the table that holds the entry relation/edge.
+	EntryTable = "collection_entries"
 	// EntryInverseTable is the table name for the Entry entity.
 	// It exists in this package in order to avoid circular dependency with the "entry" package.
 	EntryInverseTable = "entries"
+	// EntryColumn is the table column denoting the entry relation/edge.
+	EntryColumn = "entry_id"
 )
 
 // Columns holds all SQL columns for collectionentry fields.
@@ -48,15 +52,6 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
-
-var (
-	// CollectionPrimaryKey and CollectionColumn2 are the table columns denoting the
-	// primary key for the collection relation (M2M).
-	CollectionPrimaryKey = []string{"collection_id", "collection_entry_id"}
-	// EntryPrimaryKey and EntryColumn2 are the table columns denoting the
-	// primary key for the entry relation (M2M).
-	EntryPrimaryKey = []string{"entry_id", "collection_entry_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

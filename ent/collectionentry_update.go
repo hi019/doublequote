@@ -46,27 +46,13 @@ func (ceu *CollectionEntryUpdate) SetNillableIsRead(b *bool) *CollectionEntryUpd
 
 // SetCollectionID sets the "collection_id" field.
 func (ceu *CollectionEntryUpdate) SetCollectionID(i int) *CollectionEntryUpdate {
-	ceu.mutation.ResetCollectionID()
 	ceu.mutation.SetCollectionID(i)
-	return ceu
-}
-
-// AddCollectionID adds i to the "collection_id" field.
-func (ceu *CollectionEntryUpdate) AddCollectionID(i int) *CollectionEntryUpdate {
-	ceu.mutation.AddCollectionID(i)
 	return ceu
 }
 
 // SetEntryID sets the "entry_id" field.
 func (ceu *CollectionEntryUpdate) SetEntryID(i int) *CollectionEntryUpdate {
-	ceu.mutation.ResetEntryID()
 	ceu.mutation.SetEntryID(i)
-	return ceu
-}
-
-// AddEntryID adds i to the "entry_id" field.
-func (ceu *CollectionEntryUpdate) AddEntryID(i int) *CollectionEntryUpdate {
-	ceu.mutation.AddEntryID(i)
 	return ceu
 }
 
@@ -76,34 +62,14 @@ func (ceu *CollectionEntryUpdate) SetUpdatedAt(t time.Time) *CollectionEntryUpda
 	return ceu
 }
 
-// AddCollectionIDs adds the "collection" edge to the Collection entity by IDs.
-func (ceu *CollectionEntryUpdate) AddCollectionIDs(ids ...int) *CollectionEntryUpdate {
-	ceu.mutation.AddCollectionIDs(ids...)
-	return ceu
+// SetCollection sets the "collection" edge to the Collection entity.
+func (ceu *CollectionEntryUpdate) SetCollection(c *Collection) *CollectionEntryUpdate {
+	return ceu.SetCollectionID(c.ID)
 }
 
-// AddCollection adds the "collection" edges to the Collection entity.
-func (ceu *CollectionEntryUpdate) AddCollection(c ...*Collection) *CollectionEntryUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ceu.AddCollectionIDs(ids...)
-}
-
-// AddEntryIDs adds the "entry" edge to the Entry entity by IDs.
-func (ceu *CollectionEntryUpdate) AddEntryIDs(ids ...int) *CollectionEntryUpdate {
-	ceu.mutation.AddEntryIDs(ids...)
-	return ceu
-}
-
-// AddEntry adds the "entry" edges to the Entry entity.
-func (ceu *CollectionEntryUpdate) AddEntry(e ...*Entry) *CollectionEntryUpdate {
-	ids := make([]int, len(e))
-	for i := range e {
-		ids[i] = e[i].ID
-	}
-	return ceu.AddEntryIDs(ids...)
+// SetEntry sets the "entry" edge to the Entry entity.
+func (ceu *CollectionEntryUpdate) SetEntry(e *Entry) *CollectionEntryUpdate {
+	return ceu.SetEntryID(e.ID)
 }
 
 // Mutation returns the CollectionEntryMutation object of the builder.
@@ -111,46 +77,16 @@ func (ceu *CollectionEntryUpdate) Mutation() *CollectionEntryMutation {
 	return ceu.mutation
 }
 
-// ClearCollection clears all "collection" edges to the Collection entity.
+// ClearCollection clears the "collection" edge to the Collection entity.
 func (ceu *CollectionEntryUpdate) ClearCollection() *CollectionEntryUpdate {
 	ceu.mutation.ClearCollection()
 	return ceu
 }
 
-// RemoveCollectionIDs removes the "collection" edge to Collection entities by IDs.
-func (ceu *CollectionEntryUpdate) RemoveCollectionIDs(ids ...int) *CollectionEntryUpdate {
-	ceu.mutation.RemoveCollectionIDs(ids...)
-	return ceu
-}
-
-// RemoveCollection removes "collection" edges to Collection entities.
-func (ceu *CollectionEntryUpdate) RemoveCollection(c ...*Collection) *CollectionEntryUpdate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ceu.RemoveCollectionIDs(ids...)
-}
-
-// ClearEntry clears all "entry" edges to the Entry entity.
+// ClearEntry clears the "entry" edge to the Entry entity.
 func (ceu *CollectionEntryUpdate) ClearEntry() *CollectionEntryUpdate {
 	ceu.mutation.ClearEntry()
 	return ceu
-}
-
-// RemoveEntryIDs removes the "entry" edge to Entry entities by IDs.
-func (ceu *CollectionEntryUpdate) RemoveEntryIDs(ids ...int) *CollectionEntryUpdate {
-	ceu.mutation.RemoveEntryIDs(ids...)
-	return ceu
-}
-
-// RemoveEntry removes "entry" edges to Entry entities.
-func (ceu *CollectionEntryUpdate) RemoveEntry(e ...*Entry) *CollectionEntryUpdate {
-	ids := make([]int, len(e))
-	for i := range e {
-		ids[i] = e[i].ID
-	}
-	return ceu.RemoveEntryIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -161,12 +97,18 @@ func (ceu *CollectionEntryUpdate) Save(ctx context.Context) (int, error) {
 	)
 	ceu.defaults()
 	if len(ceu.hooks) == 0 {
+		if err = ceu.check(); err != nil {
+			return 0, err
+		}
 		affected, err = ceu.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*CollectionEntryMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = ceu.check(); err != nil {
+				return 0, err
 			}
 			ceu.mutation = mutation
 			affected, err = ceu.sqlSave(ctx)
@@ -216,6 +158,17 @@ func (ceu *CollectionEntryUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (ceu *CollectionEntryUpdate) check() error {
+	if _, ok := ceu.mutation.CollectionID(); ceu.mutation.CollectionCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "CollectionEntry.collection"`)
+	}
+	if _, ok := ceu.mutation.EntryID(); ceu.mutation.EntryCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "CollectionEntry.entry"`)
+	}
+	return nil
+}
+
 func (ceu *CollectionEntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -241,34 +194,6 @@ func (ceu *CollectionEntryUpdate) sqlSave(ctx context.Context) (n int, err error
 			Column: collectionentry.FieldIsRead,
 		})
 	}
-	if value, ok := ceu.mutation.CollectionID(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: collectionentry.FieldCollectionID,
-		})
-	}
-	if value, ok := ceu.mutation.AddedCollectionID(); ok {
-		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: collectionentry.FieldCollectionID,
-		})
-	}
-	if value, ok := ceu.mutation.EntryID(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: collectionentry.FieldEntryID,
-		})
-	}
-	if value, ok := ceu.mutation.AddedEntryID(); ok {
-		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: collectionentry.FieldEntryID,
-		})
-	}
 	if value, ok := ceu.mutation.UpdatedAt(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeTime,
@@ -278,10 +203,10 @@ func (ceu *CollectionEntryUpdate) sqlSave(ctx context.Context) (n int, err error
 	}
 	if ceu.mutation.CollectionCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   collectionentry.CollectionTable,
-			Columns: collectionentry.CollectionPrimaryKey,
+			Columns: []string{collectionentry.CollectionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -289,34 +214,15 @@ func (ceu *CollectionEntryUpdate) sqlSave(ctx context.Context) (n int, err error
 					Column: collection.FieldID,
 				},
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ceu.mutation.RemovedCollectionIDs(); len(nodes) > 0 && !ceu.mutation.CollectionCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   collectionentry.CollectionTable,
-			Columns: collectionentry.CollectionPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: collection.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := ceu.mutation.CollectionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   collectionentry.CollectionTable,
-			Columns: collectionentry.CollectionPrimaryKey,
+			Columns: []string{collectionentry.CollectionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -332,10 +238,10 @@ func (ceu *CollectionEntryUpdate) sqlSave(ctx context.Context) (n int, err error
 	}
 	if ceu.mutation.EntryCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   collectionentry.EntryTable,
-			Columns: collectionentry.EntryPrimaryKey,
+			Columns: []string{collectionentry.EntryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -343,34 +249,15 @@ func (ceu *CollectionEntryUpdate) sqlSave(ctx context.Context) (n int, err error
 					Column: entry.FieldID,
 				},
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ceu.mutation.RemovedEntryIDs(); len(nodes) > 0 && !ceu.mutation.EntryCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   collectionentry.EntryTable,
-			Columns: collectionentry.EntryPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: entry.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := ceu.mutation.EntryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   collectionentry.EntryTable,
-			Columns: collectionentry.EntryPrimaryKey,
+			Columns: []string{collectionentry.EntryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -419,27 +306,13 @@ func (ceuo *CollectionEntryUpdateOne) SetNillableIsRead(b *bool) *CollectionEntr
 
 // SetCollectionID sets the "collection_id" field.
 func (ceuo *CollectionEntryUpdateOne) SetCollectionID(i int) *CollectionEntryUpdateOne {
-	ceuo.mutation.ResetCollectionID()
 	ceuo.mutation.SetCollectionID(i)
-	return ceuo
-}
-
-// AddCollectionID adds i to the "collection_id" field.
-func (ceuo *CollectionEntryUpdateOne) AddCollectionID(i int) *CollectionEntryUpdateOne {
-	ceuo.mutation.AddCollectionID(i)
 	return ceuo
 }
 
 // SetEntryID sets the "entry_id" field.
 func (ceuo *CollectionEntryUpdateOne) SetEntryID(i int) *CollectionEntryUpdateOne {
-	ceuo.mutation.ResetEntryID()
 	ceuo.mutation.SetEntryID(i)
-	return ceuo
-}
-
-// AddEntryID adds i to the "entry_id" field.
-func (ceuo *CollectionEntryUpdateOne) AddEntryID(i int) *CollectionEntryUpdateOne {
-	ceuo.mutation.AddEntryID(i)
 	return ceuo
 }
 
@@ -449,34 +322,14 @@ func (ceuo *CollectionEntryUpdateOne) SetUpdatedAt(t time.Time) *CollectionEntry
 	return ceuo
 }
 
-// AddCollectionIDs adds the "collection" edge to the Collection entity by IDs.
-func (ceuo *CollectionEntryUpdateOne) AddCollectionIDs(ids ...int) *CollectionEntryUpdateOne {
-	ceuo.mutation.AddCollectionIDs(ids...)
-	return ceuo
+// SetCollection sets the "collection" edge to the Collection entity.
+func (ceuo *CollectionEntryUpdateOne) SetCollection(c *Collection) *CollectionEntryUpdateOne {
+	return ceuo.SetCollectionID(c.ID)
 }
 
-// AddCollection adds the "collection" edges to the Collection entity.
-func (ceuo *CollectionEntryUpdateOne) AddCollection(c ...*Collection) *CollectionEntryUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ceuo.AddCollectionIDs(ids...)
-}
-
-// AddEntryIDs adds the "entry" edge to the Entry entity by IDs.
-func (ceuo *CollectionEntryUpdateOne) AddEntryIDs(ids ...int) *CollectionEntryUpdateOne {
-	ceuo.mutation.AddEntryIDs(ids...)
-	return ceuo
-}
-
-// AddEntry adds the "entry" edges to the Entry entity.
-func (ceuo *CollectionEntryUpdateOne) AddEntry(e ...*Entry) *CollectionEntryUpdateOne {
-	ids := make([]int, len(e))
-	for i := range e {
-		ids[i] = e[i].ID
-	}
-	return ceuo.AddEntryIDs(ids...)
+// SetEntry sets the "entry" edge to the Entry entity.
+func (ceuo *CollectionEntryUpdateOne) SetEntry(e *Entry) *CollectionEntryUpdateOne {
+	return ceuo.SetEntryID(e.ID)
 }
 
 // Mutation returns the CollectionEntryMutation object of the builder.
@@ -484,46 +337,16 @@ func (ceuo *CollectionEntryUpdateOne) Mutation() *CollectionEntryMutation {
 	return ceuo.mutation
 }
 
-// ClearCollection clears all "collection" edges to the Collection entity.
+// ClearCollection clears the "collection" edge to the Collection entity.
 func (ceuo *CollectionEntryUpdateOne) ClearCollection() *CollectionEntryUpdateOne {
 	ceuo.mutation.ClearCollection()
 	return ceuo
 }
 
-// RemoveCollectionIDs removes the "collection" edge to Collection entities by IDs.
-func (ceuo *CollectionEntryUpdateOne) RemoveCollectionIDs(ids ...int) *CollectionEntryUpdateOne {
-	ceuo.mutation.RemoveCollectionIDs(ids...)
-	return ceuo
-}
-
-// RemoveCollection removes "collection" edges to Collection entities.
-func (ceuo *CollectionEntryUpdateOne) RemoveCollection(c ...*Collection) *CollectionEntryUpdateOne {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ceuo.RemoveCollectionIDs(ids...)
-}
-
-// ClearEntry clears all "entry" edges to the Entry entity.
+// ClearEntry clears the "entry" edge to the Entry entity.
 func (ceuo *CollectionEntryUpdateOne) ClearEntry() *CollectionEntryUpdateOne {
 	ceuo.mutation.ClearEntry()
 	return ceuo
-}
-
-// RemoveEntryIDs removes the "entry" edge to Entry entities by IDs.
-func (ceuo *CollectionEntryUpdateOne) RemoveEntryIDs(ids ...int) *CollectionEntryUpdateOne {
-	ceuo.mutation.RemoveEntryIDs(ids...)
-	return ceuo
-}
-
-// RemoveEntry removes "entry" edges to Entry entities.
-func (ceuo *CollectionEntryUpdateOne) RemoveEntry(e ...*Entry) *CollectionEntryUpdateOne {
-	ids := make([]int, len(e))
-	for i := range e {
-		ids[i] = e[i].ID
-	}
-	return ceuo.RemoveEntryIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -541,12 +364,18 @@ func (ceuo *CollectionEntryUpdateOne) Save(ctx context.Context) (*CollectionEntr
 	)
 	ceuo.defaults()
 	if len(ceuo.hooks) == 0 {
+		if err = ceuo.check(); err != nil {
+			return nil, err
+		}
 		node, err = ceuo.sqlSave(ctx)
 	} else {
 		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 			mutation, ok := m.(*CollectionEntryMutation)
 			if !ok {
 				return nil, fmt.Errorf("unexpected mutation type %T", m)
+			}
+			if err = ceuo.check(); err != nil {
+				return nil, err
 			}
 			ceuo.mutation = mutation
 			node, err = ceuo.sqlSave(ctx)
@@ -596,6 +425,17 @@ func (ceuo *CollectionEntryUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (ceuo *CollectionEntryUpdateOne) check() error {
+	if _, ok := ceuo.mutation.CollectionID(); ceuo.mutation.CollectionCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "CollectionEntry.collection"`)
+	}
+	if _, ok := ceuo.mutation.EntryID(); ceuo.mutation.EntryCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "CollectionEntry.entry"`)
+	}
+	return nil
+}
+
 func (ceuo *CollectionEntryUpdateOne) sqlSave(ctx context.Context) (_node *CollectionEntry, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
@@ -638,34 +478,6 @@ func (ceuo *CollectionEntryUpdateOne) sqlSave(ctx context.Context) (_node *Colle
 			Column: collectionentry.FieldIsRead,
 		})
 	}
-	if value, ok := ceuo.mutation.CollectionID(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: collectionentry.FieldCollectionID,
-		})
-	}
-	if value, ok := ceuo.mutation.AddedCollectionID(); ok {
-		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: collectionentry.FieldCollectionID,
-		})
-	}
-	if value, ok := ceuo.mutation.EntryID(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: collectionentry.FieldEntryID,
-		})
-	}
-	if value, ok := ceuo.mutation.AddedEntryID(); ok {
-		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: collectionentry.FieldEntryID,
-		})
-	}
 	if value, ok := ceuo.mutation.UpdatedAt(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeTime,
@@ -675,10 +487,10 @@ func (ceuo *CollectionEntryUpdateOne) sqlSave(ctx context.Context) (_node *Colle
 	}
 	if ceuo.mutation.CollectionCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   collectionentry.CollectionTable,
-			Columns: collectionentry.CollectionPrimaryKey,
+			Columns: []string{collectionentry.CollectionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -686,34 +498,15 @@ func (ceuo *CollectionEntryUpdateOne) sqlSave(ctx context.Context) (_node *Colle
 					Column: collection.FieldID,
 				},
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ceuo.mutation.RemovedCollectionIDs(); len(nodes) > 0 && !ceuo.mutation.CollectionCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   collectionentry.CollectionTable,
-			Columns: collectionentry.CollectionPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: collection.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := ceuo.mutation.CollectionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   collectionentry.CollectionTable,
-			Columns: collectionentry.CollectionPrimaryKey,
+			Columns: []string{collectionentry.CollectionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -729,10 +522,10 @@ func (ceuo *CollectionEntryUpdateOne) sqlSave(ctx context.Context) (_node *Colle
 	}
 	if ceuo.mutation.EntryCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   collectionentry.EntryTable,
-			Columns: collectionentry.EntryPrimaryKey,
+			Columns: []string{collectionentry.EntryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -740,34 +533,15 @@ func (ceuo *CollectionEntryUpdateOne) sqlSave(ctx context.Context) (_node *Colle
 					Column: entry.FieldID,
 				},
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ceuo.mutation.RemovedEntryIDs(); len(nodes) > 0 && !ceuo.mutation.EntryCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
-			Table:   collectionentry.EntryTable,
-			Columns: collectionentry.EntryPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: entry.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := ceuo.mutation.EntryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   collectionentry.EntryTable,
-			Columns: collectionentry.EntryPrimaryKey,
+			Columns: []string{collectionentry.EntryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

@@ -76,34 +76,14 @@ func (cec *CollectionEntryCreate) SetNillableUpdatedAt(t *time.Time) *Collection
 	return cec
 }
 
-// AddCollectionIDs adds the "collection" edge to the Collection entity by IDs.
-func (cec *CollectionEntryCreate) AddCollectionIDs(ids ...int) *CollectionEntryCreate {
-	cec.mutation.AddCollectionIDs(ids...)
-	return cec
+// SetCollection sets the "collection" edge to the Collection entity.
+func (cec *CollectionEntryCreate) SetCollection(c *Collection) *CollectionEntryCreate {
+	return cec.SetCollectionID(c.ID)
 }
 
-// AddCollection adds the "collection" edges to the Collection entity.
-func (cec *CollectionEntryCreate) AddCollection(c ...*Collection) *CollectionEntryCreate {
-	ids := make([]int, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return cec.AddCollectionIDs(ids...)
-}
-
-// AddEntryIDs adds the "entry" edge to the Entry entity by IDs.
-func (cec *CollectionEntryCreate) AddEntryIDs(ids ...int) *CollectionEntryCreate {
-	cec.mutation.AddEntryIDs(ids...)
-	return cec
-}
-
-// AddEntry adds the "entry" edges to the Entry entity.
-func (cec *CollectionEntryCreate) AddEntry(e ...*Entry) *CollectionEntryCreate {
-	ids := make([]int, len(e))
-	for i := range e {
-		ids[i] = e[i].ID
-	}
-	return cec.AddEntryIDs(ids...)
+// SetEntry sets the "entry" edge to the Entry entity.
+func (cec *CollectionEntryCreate) SetEntry(e *Entry) *CollectionEntryCreate {
+	return cec.SetEntryID(e.ID)
 }
 
 // Mutation returns the CollectionEntryMutation object of the builder.
@@ -208,6 +188,12 @@ func (cec *CollectionEntryCreate) check() error {
 	if _, ok := cec.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "CollectionEntry.updated_at"`)}
 	}
+	if _, ok := cec.mutation.CollectionID(); !ok {
+		return &ValidationError{Name: "collection", err: errors.New(`ent: missing required edge "CollectionEntry.collection"`)}
+	}
+	if _, ok := cec.mutation.EntryID(); !ok {
+		return &ValidationError{Name: "entry", err: errors.New(`ent: missing required edge "CollectionEntry.entry"`)}
+	}
 	return nil
 }
 
@@ -243,22 +229,6 @@ func (cec *CollectionEntryCreate) createSpec() (*CollectionEntry, *sqlgraph.Crea
 		})
 		_node.IsRead = value
 	}
-	if value, ok := cec.mutation.CollectionID(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: collectionentry.FieldCollectionID,
-		})
-		_node.CollectionID = value
-	}
-	if value, ok := cec.mutation.EntryID(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: collectionentry.FieldEntryID,
-		})
-		_node.EntryID = value
-	}
 	if value, ok := cec.mutation.CreatedAt(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeTime,
@@ -277,10 +247,10 @@ func (cec *CollectionEntryCreate) createSpec() (*CollectionEntry, *sqlgraph.Crea
 	}
 	if nodes := cec.mutation.CollectionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   collectionentry.CollectionTable,
-			Columns: collectionentry.CollectionPrimaryKey,
+			Columns: []string{collectionentry.CollectionColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -292,14 +262,15 @@ func (cec *CollectionEntryCreate) createSpec() (*CollectionEntry, *sqlgraph.Crea
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.CollectionID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := cec.mutation.EntryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: true,
 			Table:   collectionentry.EntryTable,
-			Columns: collectionentry.EntryPrimaryKey,
+			Columns: []string{collectionentry.EntryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -311,6 +282,7 @@ func (cec *CollectionEntryCreate) createSpec() (*CollectionEntry, *sqlgraph.Crea
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.EntryID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

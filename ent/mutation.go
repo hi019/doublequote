@@ -695,18 +695,12 @@ type CollectionEntryMutation struct {
 	typ               string
 	id                *int
 	is_read           *bool
-	collection_id     *int
-	addcollection_id  *int
-	entry_id          *int
-	addentry_id       *int
 	created_at        *time.Time
 	updated_at        *time.Time
 	clearedFields     map[string]struct{}
-	collection        map[int]struct{}
-	removedcollection map[int]struct{}
+	collection        *int
 	clearedcollection bool
-	entry             map[int]struct{}
-	removedentry      map[int]struct{}
+	entry             *int
 	clearedentry      bool
 	done              bool
 	oldValue          func(context.Context) (*CollectionEntry, error)
@@ -849,13 +843,12 @@ func (m *CollectionEntryMutation) ResetIsRead() {
 
 // SetCollectionID sets the "collection_id" field.
 func (m *CollectionEntryMutation) SetCollectionID(i int) {
-	m.collection_id = &i
-	m.addcollection_id = nil
+	m.collection = &i
 }
 
 // CollectionID returns the value of the "collection_id" field in the mutation.
 func (m *CollectionEntryMutation) CollectionID() (r int, exists bool) {
-	v := m.collection_id
+	v := m.collection
 	if v == nil {
 		return
 	}
@@ -879,39 +872,19 @@ func (m *CollectionEntryMutation) OldCollectionID(ctx context.Context) (v int, e
 	return oldValue.CollectionID, nil
 }
 
-// AddCollectionID adds i to the "collection_id" field.
-func (m *CollectionEntryMutation) AddCollectionID(i int) {
-	if m.addcollection_id != nil {
-		*m.addcollection_id += i
-	} else {
-		m.addcollection_id = &i
-	}
-}
-
-// AddedCollectionID returns the value that was added to the "collection_id" field in this mutation.
-func (m *CollectionEntryMutation) AddedCollectionID() (r int, exists bool) {
-	v := m.addcollection_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
 // ResetCollectionID resets all changes to the "collection_id" field.
 func (m *CollectionEntryMutation) ResetCollectionID() {
-	m.collection_id = nil
-	m.addcollection_id = nil
+	m.collection = nil
 }
 
 // SetEntryID sets the "entry_id" field.
 func (m *CollectionEntryMutation) SetEntryID(i int) {
-	m.entry_id = &i
-	m.addentry_id = nil
+	m.entry = &i
 }
 
 // EntryID returns the value of the "entry_id" field in the mutation.
 func (m *CollectionEntryMutation) EntryID() (r int, exists bool) {
-	v := m.entry_id
+	v := m.entry
 	if v == nil {
 		return
 	}
@@ -935,28 +908,9 @@ func (m *CollectionEntryMutation) OldEntryID(ctx context.Context) (v int, err er
 	return oldValue.EntryID, nil
 }
 
-// AddEntryID adds i to the "entry_id" field.
-func (m *CollectionEntryMutation) AddEntryID(i int) {
-	if m.addentry_id != nil {
-		*m.addentry_id += i
-	} else {
-		m.addentry_id = &i
-	}
-}
-
-// AddedEntryID returns the value that was added to the "entry_id" field in this mutation.
-func (m *CollectionEntryMutation) AddedEntryID() (r int, exists bool) {
-	v := m.addentry_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
 // ResetEntryID resets all changes to the "entry_id" field.
 func (m *CollectionEntryMutation) ResetEntryID() {
-	m.entry_id = nil
-	m.addentry_id = nil
+	m.entry = nil
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -1031,16 +985,6 @@ func (m *CollectionEntryMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
-// AddCollectionIDs adds the "collection" edge to the Collection entity by ids.
-func (m *CollectionEntryMutation) AddCollectionIDs(ids ...int) {
-	if m.collection == nil {
-		m.collection = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.collection[ids[i]] = struct{}{}
-	}
-}
-
 // ClearCollection clears the "collection" edge to the Collection entity.
 func (m *CollectionEntryMutation) ClearCollection() {
 	m.clearedcollection = true
@@ -1051,29 +995,12 @@ func (m *CollectionEntryMutation) CollectionCleared() bool {
 	return m.clearedcollection
 }
 
-// RemoveCollectionIDs removes the "collection" edge to the Collection entity by IDs.
-func (m *CollectionEntryMutation) RemoveCollectionIDs(ids ...int) {
-	if m.removedcollection == nil {
-		m.removedcollection = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.collection, ids[i])
-		m.removedcollection[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedCollection returns the removed IDs of the "collection" edge to the Collection entity.
-func (m *CollectionEntryMutation) RemovedCollectionIDs() (ids []int) {
-	for id := range m.removedcollection {
-		ids = append(ids, id)
-	}
-	return
-}
-
 // CollectionIDs returns the "collection" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CollectionID instead. It exists only for internal usage by the builders.
 func (m *CollectionEntryMutation) CollectionIDs() (ids []int) {
-	for id := range m.collection {
-		ids = append(ids, id)
+	if id := m.collection; id != nil {
+		ids = append(ids, *id)
 	}
 	return
 }
@@ -1082,17 +1009,6 @@ func (m *CollectionEntryMutation) CollectionIDs() (ids []int) {
 func (m *CollectionEntryMutation) ResetCollection() {
 	m.collection = nil
 	m.clearedcollection = false
-	m.removedcollection = nil
-}
-
-// AddEntryIDs adds the "entry" edge to the Entry entity by ids.
-func (m *CollectionEntryMutation) AddEntryIDs(ids ...int) {
-	if m.entry == nil {
-		m.entry = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.entry[ids[i]] = struct{}{}
-	}
 }
 
 // ClearEntry clears the "entry" edge to the Entry entity.
@@ -1105,29 +1021,12 @@ func (m *CollectionEntryMutation) EntryCleared() bool {
 	return m.clearedentry
 }
 
-// RemoveEntryIDs removes the "entry" edge to the Entry entity by IDs.
-func (m *CollectionEntryMutation) RemoveEntryIDs(ids ...int) {
-	if m.removedentry == nil {
-		m.removedentry = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.entry, ids[i])
-		m.removedentry[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedEntry returns the removed IDs of the "entry" edge to the Entry entity.
-func (m *CollectionEntryMutation) RemovedEntryIDs() (ids []int) {
-	for id := range m.removedentry {
-		ids = append(ids, id)
-	}
-	return
-}
-
 // EntryIDs returns the "entry" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// EntryID instead. It exists only for internal usage by the builders.
 func (m *CollectionEntryMutation) EntryIDs() (ids []int) {
-	for id := range m.entry {
-		ids = append(ids, id)
+	if id := m.entry; id != nil {
+		ids = append(ids, *id)
 	}
 	return
 }
@@ -1136,7 +1035,6 @@ func (m *CollectionEntryMutation) EntryIDs() (ids []int) {
 func (m *CollectionEntryMutation) ResetEntry() {
 	m.entry = nil
 	m.clearedentry = false
-	m.removedentry = nil
 }
 
 // Where appends a list predicates to the CollectionEntryMutation builder.
@@ -1162,10 +1060,10 @@ func (m *CollectionEntryMutation) Fields() []string {
 	if m.is_read != nil {
 		fields = append(fields, collectionentry.FieldIsRead)
 	}
-	if m.collection_id != nil {
+	if m.collection != nil {
 		fields = append(fields, collectionentry.FieldCollectionID)
 	}
-	if m.entry_id != nil {
+	if m.entry != nil {
 		fields = append(fields, collectionentry.FieldEntryID)
 	}
 	if m.created_at != nil {
@@ -1263,12 +1161,6 @@ func (m *CollectionEntryMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *CollectionEntryMutation) AddedFields() []string {
 	var fields []string
-	if m.addcollection_id != nil {
-		fields = append(fields, collectionentry.FieldCollectionID)
-	}
-	if m.addentry_id != nil {
-		fields = append(fields, collectionentry.FieldEntryID)
-	}
 	return fields
 }
 
@@ -1277,10 +1169,6 @@ func (m *CollectionEntryMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *CollectionEntryMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
-	case collectionentry.FieldCollectionID:
-		return m.AddedCollectionID()
-	case collectionentry.FieldEntryID:
-		return m.AddedEntryID()
 	}
 	return nil, false
 }
@@ -1290,20 +1178,6 @@ func (m *CollectionEntryMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *CollectionEntryMutation) AddField(name string, value ent.Value) error {
 	switch name {
-	case collectionentry.FieldCollectionID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddCollectionID(v)
-		return nil
-	case collectionentry.FieldEntryID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddEntryID(v)
-		return nil
 	}
 	return fmt.Errorf("unknown CollectionEntry numeric field %s", name)
 }
@@ -1367,17 +1241,13 @@ func (m *CollectionEntryMutation) AddedEdges() []string {
 func (m *CollectionEntryMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case collectionentry.EdgeCollection:
-		ids := make([]ent.Value, 0, len(m.collection))
-		for id := range m.collection {
-			ids = append(ids, id)
+		if id := m.collection; id != nil {
+			return []ent.Value{*id}
 		}
-		return ids
 	case collectionentry.EdgeEntry:
-		ids := make([]ent.Value, 0, len(m.entry))
-		for id := range m.entry {
-			ids = append(ids, id)
+		if id := m.entry; id != nil {
+			return []ent.Value{*id}
 		}
-		return ids
 	}
 	return nil
 }
@@ -1385,12 +1255,6 @@ func (m *CollectionEntryMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CollectionEntryMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 2)
-	if m.removedcollection != nil {
-		edges = append(edges, collectionentry.EdgeCollection)
-	}
-	if m.removedentry != nil {
-		edges = append(edges, collectionentry.EdgeEntry)
-	}
 	return edges
 }
 
@@ -1398,18 +1262,6 @@ func (m *CollectionEntryMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *CollectionEntryMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case collectionentry.EdgeCollection:
-		ids := make([]ent.Value, 0, len(m.removedcollection))
-		for id := range m.removedcollection {
-			ids = append(ids, id)
-		}
-		return ids
-	case collectionentry.EdgeEntry:
-		ids := make([]ent.Value, 0, len(m.removedentry))
-		for id := range m.removedentry {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
@@ -1442,6 +1294,12 @@ func (m *CollectionEntryMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *CollectionEntryMutation) ClearEdge(name string) error {
 	switch name {
+	case collectionentry.EdgeCollection:
+		m.ClearCollection()
+		return nil
+	case collectionentry.EdgeEntry:
+		m.ClearEntry()
+		return nil
 	}
 	return fmt.Errorf("unknown CollectionEntry unique edge %s", name)
 }

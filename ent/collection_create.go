@@ -271,10 +271,10 @@ func (cc *CollectionCreate) createSpec() (*Collection, *sqlgraph.CreateSpec) {
 	}
 	if nodes := cc.mutation.CollectionEntriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   collection.CollectionEntriesTable,
-			Columns: collection.CollectionEntriesPrimaryKey,
+			Columns: []string{collection.CollectionEntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

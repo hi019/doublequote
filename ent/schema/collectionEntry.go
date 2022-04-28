@@ -33,7 +33,15 @@ func (CollectionEntry) Fields() []ent.Field {
 // Edges of the CollectionEntry.
 func (CollectionEntry) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("collection", Collection.Type).Ref("collection_entries"),
-		edge.From("entry", Entry.Type).Ref("collection_entries"),
+		edge.From("collection", Collection.Type).
+			Ref("collection_entries").
+			Field("collection_id").
+			Required().
+			Unique(),
+		edge.From("entry", Entry.Type).
+			Ref("collection_entries").
+			Field("entry_id").
+			Required().
+			Unique(),
 	}
 }

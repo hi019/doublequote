@@ -36,11 +36,13 @@ const (
 	FeedInverseTable = "feeds"
 	// FeedColumn is the table column denoting the feed relation/edge.
 	FeedColumn = "feed_entries"
-	// CollectionEntriesTable is the table that holds the collection_entries relation/edge. The primary key declared below.
-	CollectionEntriesTable = "entry_collection_entries"
+	// CollectionEntriesTable is the table that holds the collection_entries relation/edge.
+	CollectionEntriesTable = "collection_entries"
 	// CollectionEntriesInverseTable is the table name for the CollectionEntry entity.
 	// It exists in this package in order to avoid circular dependency with the "collectionentry" package.
 	CollectionEntriesInverseTable = "collection_entries"
+	// CollectionEntriesColumn is the table column denoting the collection_entries relation/edge.
+	CollectionEntriesColumn = "entry_id"
 )
 
 // Columns holds all SQL columns for entry fields.
@@ -59,12 +61,6 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"feed_entries",
 }
-
-var (
-	// CollectionEntriesPrimaryKey and CollectionEntriesColumn2 are the table columns denoting the
-	// primary key for the collection_entries relation (M2M).
-	CollectionEntriesPrimaryKey = []string{"entry_id", "collection_entry_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {

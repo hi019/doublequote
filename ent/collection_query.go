@@ -105,7 +105,7 @@ func (cq *CollectionQuery) QueryCollectionEntries() *CollectionEntryQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(collection.Table, collection.FieldID, selector),
 			sqlgraph.To(collectionentry.Table, collectionentry.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, collection.CollectionEntriesTable, collection.CollectionEntriesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, collection.CollectionEntriesTable, collection.CollectionEntriesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
 		return fromU, nil
@@ -487,66 +487,26 @@ func (cq *CollectionQuery) sqlAll(ctx context.Context) ([]*Collection, error) {
 
 	if query := cq.withCollectionEntries; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*Collection, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.CollectionEntries = []*CollectionEntry{}
+		nodeids := make(map[int]*Collection)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.CollectionEntries = []*CollectionEntry{}
 		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*Collection)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: false,
-				Table:   collection.CollectionEntriesTable,
-				Columns: collection.CollectionEntriesPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(collection.CollectionEntriesPrimaryKey[0], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, cq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "collection_entries": %w`, err)
-		}
-		query.Where(collectionentry.IDIn(edgeids...))
+		query.Where(predicate.CollectionEntry(func(s *sql.Selector) {
+			s.Where(sql.InValues(collection.CollectionEntriesColumn, fks...))
+		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
+			fk := n.CollectionID
+			node, ok := nodeids[fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected "collection_entries" node returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "collection_id" returned %v for node %v`, fk, n.ID)
 			}
-			for i := range nodes {
-				nodes[i].Edges.CollectionEntries = append(nodes[i].Edges.CollectionEntries, n)
-			}
+			node.Edges.CollectionEntries = append(node.Edges.CollectionEntries, n)
 		}
 	}
 

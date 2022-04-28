@@ -765,7 +765,7 @@ func HasCollectionEntries() predicate.Entry {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(CollectionEntriesTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, CollectionEntriesTable, CollectionEntriesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, CollectionEntriesTable, CollectionEntriesColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -777,7 +777,7 @@ func HasCollectionEntriesWith(preds ...predicate.CollectionEntry) predicate.Entr
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(CollectionEntriesInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, CollectionEntriesTable, CollectionEntriesPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, CollectionEntriesTable, CollectionEntriesColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

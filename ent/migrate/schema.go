@@ -34,16 +34,30 @@ var (
 	CollectionEntriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "is_read", Type: field.TypeBool, Default: false},
-		{Name: "collection_id", Type: field.TypeInt},
-		{Name: "entry_id", Type: field.TypeInt},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "collection_id", Type: field.TypeInt, Nullable: true},
+		{Name: "entry_id", Type: field.TypeInt, Nullable: true},
 	}
 	// CollectionEntriesTable holds the schema information for the "collection_entries" table.
 	CollectionEntriesTable = &schema.Table{
 		Name:       "collection_entries",
 		Columns:    CollectionEntriesColumns,
 		PrimaryKey: []*schema.Column{CollectionEntriesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "collection_entries_collections_collection_entries",
+				Columns:    []*schema.Column{CollectionEntriesColumns[4]},
+				RefColumns: []*schema.Column{CollectionsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "collection_entries_entries_collection_entries",
+				Columns:    []*schema.Column{CollectionEntriesColumns[5]},
+				RefColumns: []*schema.Column{EntriesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// EntriesColumns holds the columns for the "entries" table.
 	EntriesColumns = []*schema.Column{
@@ -100,31 +114,6 @@ var (
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
 	}
-	// CollectionCollectionEntriesColumns holds the columns for the "collection_collection_entries" table.
-	CollectionCollectionEntriesColumns = []*schema.Column{
-		{Name: "collection_id", Type: field.TypeInt},
-		{Name: "collection_entry_id", Type: field.TypeInt},
-	}
-	// CollectionCollectionEntriesTable holds the schema information for the "collection_collection_entries" table.
-	CollectionCollectionEntriesTable = &schema.Table{
-		Name:       "collection_collection_entries",
-		Columns:    CollectionCollectionEntriesColumns,
-		PrimaryKey: []*schema.Column{CollectionCollectionEntriesColumns[0], CollectionCollectionEntriesColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "collection_collection_entries_collection_id",
-				Columns:    []*schema.Column{CollectionCollectionEntriesColumns[0]},
-				RefColumns: []*schema.Column{CollectionsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "collection_collection_entries_collection_entry_id",
-				Columns:    []*schema.Column{CollectionCollectionEntriesColumns[1]},
-				RefColumns: []*schema.Column{CollectionEntriesColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// CollectionFeedsColumns holds the columns for the "collection_feeds" table.
 	CollectionFeedsColumns = []*schema.Column{
 		{Name: "collection_id", Type: field.TypeInt},
@@ -150,31 +139,6 @@ var (
 			},
 		},
 	}
-	// EntryCollectionEntriesColumns holds the columns for the "entry_collection_entries" table.
-	EntryCollectionEntriesColumns = []*schema.Column{
-		{Name: "entry_id", Type: field.TypeInt},
-		{Name: "collection_entry_id", Type: field.TypeInt},
-	}
-	// EntryCollectionEntriesTable holds the schema information for the "entry_collection_entries" table.
-	EntryCollectionEntriesTable = &schema.Table{
-		Name:       "entry_collection_entries",
-		Columns:    EntryCollectionEntriesColumns,
-		PrimaryKey: []*schema.Column{EntryCollectionEntriesColumns[0], EntryCollectionEntriesColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "entry_collection_entries_entry_id",
-				Columns:    []*schema.Column{EntryCollectionEntriesColumns[0]},
-				RefColumns: []*schema.Column{EntriesColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "entry_collection_entries_collection_entry_id",
-				Columns:    []*schema.Column{EntryCollectionEntriesColumns[1]},
-				RefColumns: []*schema.Column{CollectionEntriesColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		CollectionsTable,
@@ -182,19 +146,15 @@ var (
 		EntriesTable,
 		FeedsTable,
 		UsersTable,
-		CollectionCollectionEntriesTable,
 		CollectionFeedsTable,
-		EntryCollectionEntriesTable,
 	}
 )
 
 func init() {
 	CollectionsTable.ForeignKeys[0].RefTable = UsersTable
+	CollectionEntriesTable.ForeignKeys[0].RefTable = CollectionsTable
+	CollectionEntriesTable.ForeignKeys[1].RefTable = EntriesTable
 	EntriesTable.ForeignKeys[0].RefTable = FeedsTable
-	CollectionCollectionEntriesTable.ForeignKeys[0].RefTable = CollectionsTable
-	CollectionCollectionEntriesTable.ForeignKeys[1].RefTable = CollectionEntriesTable
 	CollectionFeedsTable.ForeignKeys[0].RefTable = CollectionsTable
 	CollectionFeedsTable.ForeignKeys[1].RefTable = FeedsTable
-	EntryCollectionEntriesTable.ForeignKeys[0].RefTable = EntriesTable
-	EntryCollectionEntriesTable.ForeignKeys[1].RefTable = CollectionEntriesTable
 }

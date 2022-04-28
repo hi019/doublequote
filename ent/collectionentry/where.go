@@ -190,34 +190,6 @@ func CollectionIDNotIn(vs ...int) predicate.CollectionEntry {
 	})
 }
 
-// CollectionIDGT applies the GT predicate on the "collection_id" field.
-func CollectionIDGT(v int) predicate.CollectionEntry {
-	return predicate.CollectionEntry(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldCollectionID), v))
-	})
-}
-
-// CollectionIDGTE applies the GTE predicate on the "collection_id" field.
-func CollectionIDGTE(v int) predicate.CollectionEntry {
-	return predicate.CollectionEntry(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldCollectionID), v))
-	})
-}
-
-// CollectionIDLT applies the LT predicate on the "collection_id" field.
-func CollectionIDLT(v int) predicate.CollectionEntry {
-	return predicate.CollectionEntry(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldCollectionID), v))
-	})
-}
-
-// CollectionIDLTE applies the LTE predicate on the "collection_id" field.
-func CollectionIDLTE(v int) predicate.CollectionEntry {
-	return predicate.CollectionEntry(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldCollectionID), v))
-	})
-}
-
 // EntryIDEQ applies the EQ predicate on the "entry_id" field.
 func EntryIDEQ(v int) predicate.CollectionEntry {
 	return predicate.CollectionEntry(func(s *sql.Selector) {
@@ -263,34 +235,6 @@ func EntryIDNotIn(vs ...int) predicate.CollectionEntry {
 			return
 		}
 		s.Where(sql.NotIn(s.C(FieldEntryID), v...))
-	})
-}
-
-// EntryIDGT applies the GT predicate on the "entry_id" field.
-func EntryIDGT(v int) predicate.CollectionEntry {
-	return predicate.CollectionEntry(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldEntryID), v))
-	})
-}
-
-// EntryIDGTE applies the GTE predicate on the "entry_id" field.
-func EntryIDGTE(v int) predicate.CollectionEntry {
-	return predicate.CollectionEntry(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldEntryID), v))
-	})
-}
-
-// EntryIDLT applies the LT predicate on the "entry_id" field.
-func EntryIDLT(v int) predicate.CollectionEntry {
-	return predicate.CollectionEntry(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldEntryID), v))
-	})
-}
-
-// EntryIDLTE applies the LTE predicate on the "entry_id" field.
-func EntryIDLTE(v int) predicate.CollectionEntry {
-	return predicate.CollectionEntry(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldEntryID), v))
 	})
 }
 
@@ -452,7 +396,7 @@ func HasCollection() predicate.CollectionEntry {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(CollectionTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, CollectionTable, CollectionPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, CollectionTable, CollectionColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -464,7 +408,7 @@ func HasCollectionWith(preds ...predicate.Collection) predicate.CollectionEntry 
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(CollectionInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, CollectionTable, CollectionPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, CollectionTable, CollectionColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
@@ -480,7 +424,7 @@ func HasEntry() predicate.CollectionEntry {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(EntryTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, EntryTable, EntryPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, EntryTable, EntryColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -492,7 +436,7 @@ func HasEntryWith(preds ...predicate.Entry) predicate.CollectionEntry {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
 			sqlgraph.To(EntryInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, EntryTable, EntryPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, EntryTable, EntryColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

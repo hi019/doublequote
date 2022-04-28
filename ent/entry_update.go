@@ -279,10 +279,10 @@ func (eu *EntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if eu.mutation.CollectionEntriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   entry.CollectionEntriesTable,
-			Columns: entry.CollectionEntriesPrimaryKey,
+			Columns: []string{entry.CollectionEntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -295,10 +295,10 @@ func (eu *EntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := eu.mutation.RemovedCollectionEntriesIDs(); len(nodes) > 0 && !eu.mutation.CollectionEntriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   entry.CollectionEntriesTable,
-			Columns: entry.CollectionEntriesPrimaryKey,
+			Columns: []string{entry.CollectionEntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -314,10 +314,10 @@ func (eu *EntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := eu.mutation.CollectionEntriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   entry.CollectionEntriesTable,
-			Columns: entry.CollectionEntriesPrimaryKey,
+			Columns: []string{entry.CollectionEntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -623,10 +623,10 @@ func (euo *EntryUpdateOne) sqlSave(ctx context.Context) (_node *Entry, err error
 	}
 	if euo.mutation.CollectionEntriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   entry.CollectionEntriesTable,
-			Columns: entry.CollectionEntriesPrimaryKey,
+			Columns: []string{entry.CollectionEntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -639,10 +639,10 @@ func (euo *EntryUpdateOne) sqlSave(ctx context.Context) (_node *Entry, err error
 	}
 	if nodes := euo.mutation.RemovedCollectionEntriesIDs(); len(nodes) > 0 && !euo.mutation.CollectionEntriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   entry.CollectionEntriesTable,
-			Columns: entry.CollectionEntriesPrimaryKey,
+			Columns: []string{entry.CollectionEntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -658,10 +658,10 @@ func (euo *EntryUpdateOne) sqlSave(ctx context.Context) (_node *Entry, err error
 	}
 	if nodes := euo.mutation.CollectionEntriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   entry.CollectionEntriesTable,
-			Columns: entry.CollectionEntriesPrimaryKey,
+			Columns: []string{entry.CollectionEntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{

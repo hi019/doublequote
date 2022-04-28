@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"doublequote/ent/collection"
 	"doublequote/ent/collectionentry"
 	"doublequote/ent/entry"
@@ -80,7 +79,7 @@ func (ceq *CollectionEntryQuery) QueryCollection() *CollectionQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(collectionentry.Table, collectionentry.FieldID, selector),
 			sqlgraph.To(collection.Table, collection.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, collectionentry.CollectionTable, collectionentry.CollectionPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, collectionentry.CollectionTable, collectionentry.CollectionColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(ceq.driver.Dialect(), step)
 		return fromU, nil
@@ -102,7 +101,7 @@ func (ceq *CollectionEntryQuery) QueryEntry() *EntryQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(collectionentry.Table, collectionentry.FieldID, selector),
 			sqlgraph.To(entry.Table, entry.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, collectionentry.EntryTable, collectionentry.EntryPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, collectionentry.EntryTable, collectionentry.EntryColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(ceq.driver.Dialect(), step)
 		return fromU, nil
@@ -412,131 +411,53 @@ func (ceq *CollectionEntryQuery) sqlAll(ctx context.Context) ([]*CollectionEntry
 	}
 
 	if query := ceq.withCollection; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*CollectionEntry, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.Collection = []*Collection{}
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*CollectionEntry)
+		for i := range nodes {
+			fk := nodes[i].CollectionID
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
 		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*CollectionEntry)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: true,
-				Table:   collectionentry.CollectionTable,
-				Columns: collectionentry.CollectionPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(collectionentry.CollectionPrimaryKey[1], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, ceq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "collection": %w`, err)
-		}
-		query.Where(collection.IDIn(edgeids...))
+		query.Where(collection.IDIn(ids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
+			nodes, ok := nodeids[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected "collection" node returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "collection_id" returned %v`, n.ID)
 			}
 			for i := range nodes {
-				nodes[i].Edges.Collection = append(nodes[i].Edges.Collection, n)
+				nodes[i].Edges.Collection = n
 			}
 		}
 	}
 
 	if query := ceq.withEntry; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		ids := make(map[int]*CollectionEntry, len(nodes))
-		for _, node := range nodes {
-			ids[node.ID] = node
-			fks = append(fks, node.ID)
-			node.Edges.Entry = []*Entry{}
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*CollectionEntry)
+		for i := range nodes {
+			fk := nodes[i].EntryID
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
 		}
-		var (
-			edgeids []int
-			edges   = make(map[int][]*CollectionEntry)
-		)
-		_spec := &sqlgraph.EdgeQuerySpec{
-			Edge: &sqlgraph.EdgeSpec{
-				Inverse: true,
-				Table:   collectionentry.EntryTable,
-				Columns: collectionentry.EntryPrimaryKey,
-			},
-			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(collectionentry.EntryPrimaryKey[1], fks...))
-			},
-			ScanValues: func() [2]interface{} {
-				return [2]interface{}{new(sql.NullInt64), new(sql.NullInt64)}
-			},
-			Assign: func(out, in interface{}) error {
-				eout, ok := out.(*sql.NullInt64)
-				if !ok || eout == nil {
-					return fmt.Errorf("unexpected id value for edge-out")
-				}
-				ein, ok := in.(*sql.NullInt64)
-				if !ok || ein == nil {
-					return fmt.Errorf("unexpected id value for edge-in")
-				}
-				outValue := int(eout.Int64)
-				inValue := int(ein.Int64)
-				node, ok := ids[outValue]
-				if !ok {
-					return fmt.Errorf("unexpected node id in edges: %v", outValue)
-				}
-				if _, ok := edges[inValue]; !ok {
-					edgeids = append(edgeids, inValue)
-				}
-				edges[inValue] = append(edges[inValue], node)
-				return nil
-			},
-		}
-		if err := sqlgraph.QueryEdges(ctx, ceq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "entry": %w`, err)
-		}
-		query.Where(entry.IDIn(edgeids...))
+		query.Where(entry.IDIn(ids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			nodes, ok := edges[n.ID]
+			nodes, ok := nodeids[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected "entry" node returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "entry_id" returned %v`, n.ID)
 			}
 			for i := range nodes {
-				nodes[i].Edges.Entry = append(nodes[i].Edges.Entry, n)
+				nodes[i].Edges.Entry = n
 			}
 		}
 	}

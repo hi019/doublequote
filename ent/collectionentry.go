@@ -3,7 +3,9 @@
 package ent
 
 import (
+	"doublequote/ent/collection"
 	"doublequote/ent/collectionentry"
+	"doublequote/ent/entry"
 	"fmt"
 	"strings"
 	"time"
@@ -34,27 +36,37 @@ type CollectionEntry struct {
 // CollectionEntryEdges holds the relations/edges for other nodes in the graph.
 type CollectionEntryEdges struct {
 	// Collection holds the value of the collection edge.
-	Collection []*Collection `json:"collection,omitempty"`
+	Collection *Collection `json:"collection,omitempty"`
 	// Entry holds the value of the entry edge.
-	Entry []*Entry `json:"entry,omitempty"`
+	Entry *Entry `json:"entry,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
 }
 
 // CollectionOrErr returns the Collection value or an error if the edge
-// was not loaded in eager-loading.
-func (e CollectionEntryEdges) CollectionOrErr() ([]*Collection, error) {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e CollectionEntryEdges) CollectionOrErr() (*Collection, error) {
 	if e.loadedTypes[0] {
+		if e.Collection == nil {
+			// The edge collection was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: collection.Label}
+		}
 		return e.Collection, nil
 	}
 	return nil, &NotLoadedError{edge: "collection"}
 }
 
 // EntryOrErr returns the Entry value or an error if the edge
-// was not loaded in eager-loading.
-func (e CollectionEntryEdges) EntryOrErr() ([]*Entry, error) {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e CollectionEntryEdges) EntryOrErr() (*Entry, error) {
 	if e.loadedTypes[1] {
+		if e.Entry == nil {
+			// The edge entry was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: entry.Label}
+		}
 		return e.Entry, nil
 	}
 	return nil, &NotLoadedError{edge: "entry"}
