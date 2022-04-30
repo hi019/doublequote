@@ -52,13 +52,6 @@ func (s *Service) start() error {
 		})
 	}
 
-	//s.eventService.Subscribe("reaper", func(_ domain.Event) error {
-	//	return s.reaperService.Run()
-	//})
-	//if err := s.eventService.PublishPeriodic("reaper", "", nil); err != nil {
-	//	return err
-	//}
-
 	s.eventService.Subscribe("ingest", func(e domain.Event) error {
 		return s.ingestJob.Run()
 	})

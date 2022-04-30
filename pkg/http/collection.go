@@ -16,6 +16,7 @@ import (
 func (s *Server) registerCollectionRoutes(r chi.Router) {
 	r.Get("/collections/{collectionID}/feeds", s.handleGetCollectionFeeds)
 	r.Put("/collections/{collectionID}/feeds", s.handlePutCollectionFeeds)
+	r.Get("/collections/{collectionID}/entries", s.handleGetCollectionEntries)
 	r.Get("/collections", s.handleListCollections)
 	r.Post("/collections", s.handleCreateCollection)
 }
@@ -185,27 +186,37 @@ func (s *Server) handlePutCollectionFeeds(w http.ResponseWriter, r *http.Request
 	sendJSON(w, r, req)
 }
 
-// func (s *Server) handleGetCollectionEntries(w http.ResponseWriter, r *http.Request) {
-// 	colID, err := strconv.Atoi(chi.URLParam(r, "collectionID"))
-// 	if err != nil {
-// 		Error(w, r, err)
-// 		return
-// 	}
+type getCollectionEntriesResponse struct {
+	CollectionEntries []*domain.CollectionEntry `json:"collection_entries"`
+}
 
-// 	// Make sure the requesting user owns the collection
-// 	if col, err := s.collectionService.FindCollectionByID(r.Context(), colID, dq.CollectionInclude{}); err != nil {
-// 		Error(w, r, err)
-// 		return
-// 	} else if col.UserID != dq.UserIDFromContext(r.Context()) {
-// 		Error(w, r, dq.Errorf(dq.ENOTFOUND, dq.ErrNotFound, "Collection"))
-// 		return
-// 	}
+func (s *Server) handleGetCollectionEntries(w http.ResponseWriter, r *http.Request) {
+	colID, err := strconv.Atoi(chi.URLParam(r, "collectionID"))
+	if err != nil {
+		Error(w, r, err)
+		return
+	}
 
-// 	feeds, _, err := s.feedService.FindFeeds(r.Context(), dq.FeedFilter{CollectionID: &colID}, dq.FeedInclude{})
-// 	if err != nil {
-// 		Error(w, r, err)
-// 		return
-// 	}
+	// Make sure the requesting user owns the collection
+	if col, err := s.collectionService.FindCollectionByID(r.Context(), colID, domain.CollectionInclude{}); err != nil {
+		Error(w, r, err)
+		return
+	} else if col.UserID != domain.UserIDFromContext(r.Context()) {
+		Error(w, r, domain.Errorf(domain.ENOTFOUND, domain.ErrNotFound, "Collection"))
+		return
+	}
 
-// 	// entries, err := s.entryService.FindEntry(r.Context(), dq.EntryFilter{FeedID: }, dq.EntryInclude{})
-// }
+	entries, _, err := s.collectionEntryService.FindCollectionEntries(
+		r.Context(),
+		domain.CollectionEntryFilter{CollectionID: utils.Ptr(colID)},
+		domain.CollectionEntryInclude{Entry: true},
+	)
+	if err != nil {
+		Error(w, r, err)
+		return
+	}
+
+	// So that the JSON array in the response isn't null if entries is empty
+	res := append([]*domain.CollectionEntry{}, entries...)
+	sendJSON(w, r, getCollectionEntriesResponse{res})
+}

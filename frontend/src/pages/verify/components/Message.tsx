@@ -1,6 +1,6 @@
-import Title from "../../../components/Title";
 import { motion } from "framer-motion";
 import { Checkbox } from "./Checkbox";
+import { Box, Heading } from "@chakra-ui/react";
 
 const variants = {
   hidden: { opacity: 0 },
@@ -9,14 +9,16 @@ const variants = {
 
 export const Message = () => {
   return (
-    <div>
-      <div className={"mb-12"}>
+    <Box>
+      <Box mb={12}>
         <Checkbox />
-      </div>
+      </Box>
 
       <motion.div initial="hidden" animate="visible" variants={variants}>
-        <Title>Email verified. Welcome to Doublequote!</Title>
+        <Heading size={"sm"} fontWeight={"normal"}>
+          Email verified. Welcome to Doublequote!
+        </Heading>
       </motion.div>
-    </div>
+    </Box>
   );
 };

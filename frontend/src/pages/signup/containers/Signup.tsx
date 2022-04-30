@@ -1,13 +1,22 @@
-import { Message } from "../components/Message";
-import { Form, SignupForm } from "../components/Form";
-import { useSignupMutation } from "../../../api";
 import { isErrorType, isInvalidParamError } from "../../../helpers/types";
 import { toast } from "react-toastify";
-import { Welcome } from "../components/Welcome";
 import React from "react";
+import { Message } from "../components/Message";
+import { Form, SignupForm } from "../components/Form";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Location } from "history";
+import { useSignupMutation } from "../../../api";
+import { useAppDispatch } from "../../../store/hooks";
+import { setIsSignedIn } from "../../../slices/user";
+import { Box } from "@chakra-ui/react";
+import { Welcome } from "../components/Welcome";
 
 export const Signup = () => {
   const [signup, { isLoading, isSuccess, error }] = useSignupMutation();
+  const navigate = useNavigate();
+  // @ts-ignore
+  const { state } = useLocation() as Location<{ path: string }>;
+  const dispatch = useAppDispatch();
 
   const onSubmit = (data: SignupForm) => {
     signup(data);
@@ -25,15 +34,23 @@ export const Signup = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <Box
+      h={"100vh"}
+      display={"flex"}
+      alignItems={"center"}
+      justifyContent={"center"}
+      bg={"gray.50"}
+      py={12}
+      px={4}
+    >
+      <Box maxW={"md"} w={"full"} experimental_spaceY={10}>
         <Message />
         <Form
           isLoading={isLoading}
           onSubmit={onSubmit}
           serverErrors={isInvalidParamError(error) ? error : undefined}
         />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };

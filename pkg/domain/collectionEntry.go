@@ -35,11 +35,10 @@ type CollectionEntryService interface {
 }
 
 type CollectionEntryFilter struct {
-	ID     *int
-	Name   *string
-	UserID *int
+	ID *int
 
-	FeedID *int
+	CollectionID *int
+	EntryID      *int
 
 	Offset int
 	Limit  int

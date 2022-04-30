@@ -29,13 +29,14 @@ type Server struct {
 	router *chi.Mux
 	now    func() time.Time
 
-	userService       domain.UserService
-	cryptoService     domain.CryptoService
-	sessionService    domain.SessionService
-	collectionService domain.CollectionService
-	feedService       domain.FeedService
-	entryService      domain.EntryService
-	storageService    domain.StorageService
+	userService            domain.UserService
+	cryptoService          domain.CryptoService
+	sessionService         domain.SessionService
+	collectionService      domain.CollectionService
+	collectionEntryService domain.CollectionEntryService
+	feedService            domain.FeedService
+	entryService           domain.EntryService
+	storageService         domain.StorageService
 
 	config domain.Config
 }
@@ -46,20 +47,22 @@ func NewServer(
 	cryptoService domain.CryptoService,
 	sessionService domain.SessionService,
 	collectionService domain.CollectionService,
+	collectionEntryService domain.CollectionEntryService,
 	feedService domain.FeedService,
 	entryService domain.EntryService,
 	storageService domain.StorageService,
 	config domain.Config,
 ) *Server {
 	s := &Server{
-		userService:       userService,
-		cryptoService:     cryptoService,
-		sessionService:    sessionService,
-		collectionService: collectionService,
-		feedService:       feedService,
-		entryService:      entryService,
-		storageService:    storageService,
-		config:            config,
+		userService:            userService,
+		cryptoService:          cryptoService,
+		sessionService:         sessionService,
+		collectionService:      collectionService,
+		collectionEntryService: collectionEntryService,
+		feedService:            feedService,
+		entryService:           entryService,
+		storageService:         storageService,
+		config:                 config,
 
 		server: &http.Server{},
 		router: chi.NewRouter(),

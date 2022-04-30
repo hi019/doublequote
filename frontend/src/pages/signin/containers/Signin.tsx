@@ -8,6 +8,7 @@ import { Location } from "history";
 import { useSigninMutation } from "../../../api";
 import { useAppDispatch } from "../../../store/hooks";
 import { setIsSignedIn } from "../../../slices/user";
+import { Box } from "@chakra-ui/react";
 
 export const Signin = () => {
   const [login, { isLoading, isSuccess, error }] = useSigninMutation();
@@ -34,15 +35,23 @@ export const Signin = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <Box
+      h={"100vh"}
+      display={"flex"}
+      alignItems={"center"}
+      justifyContent={"center"}
+      bg={"gray.50"}
+      py={12}
+      px={4}
+    >
+      <Box maxW={"md"} w={"full"} experimental_spaceY={10}>
         <Message />
         <Form
           isLoading={isLoading}
           onSubmit={onSubmit}
           serverErrors={isInvalidParamError(error) ? error : undefined}
         />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };

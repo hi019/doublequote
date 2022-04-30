@@ -2,8 +2,7 @@ import { Message } from "../components/Message";
 import { useVerifyEmailMutation } from "../../../api";
 import React from "react";
 import { useLocation } from "react-router-dom";
-import Title from "../../../components/Title";
-import { Loader } from "../../../components/Loader";
+import { Heading, Spinner, VStack } from "@chakra-ui/react";
 
 export const Verify = () => {
   const [verifyEmail, { isLoading, isSuccess, error }] =
@@ -21,18 +20,25 @@ export const Verify = () => {
   let element: React.ReactNode;
 
   if (!token) {
-    element = <Title>Error: token not found</Title>;
+    element = <Heading textColor={"error"}>Error: token not found</Heading>;
   } else if (isLoading) {
-    element = <Loader className={"text-black"} />;
+    element = <Spinner />;
   } else if (isSuccess) {
     element = <Message />;
   } else if (error) {
-    element = <Title>Error</Title>;
+    element = <Heading textColor={"error"}>Error</Heading>;
   }
 
   return (
-    <div className="min-h-screen flex items-center flex-col justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <VStack
+      minH={"100vh"}
+      alignItems={"center"}
+      justifyContent={"center"}
+      bg={"gray.50"}
+      py={12}
+      px={{ base: 4, sm: 6, lg: 8 }}
+    >
       {element}
-    </div>
+    </VStack>
   );
 };

@@ -6,6 +6,7 @@ import {
   DocumentTextIcon,
   ClockIcon,
 } from "@heroicons/react/outline";
+import { Box, Heading } from "@chakra-ui/react";
 
 const widgets = [
   {
@@ -42,11 +43,17 @@ const widgets = [
 
 export const Features = () => {
   return (
-    <div className={"bg-purple-50 pb-8"}>
-      <div className={"w-100 flex items-center pt-16 flex-col"}>
-        <h1 className={"text-3xl font-serif text-center text-gray-800"}>
+    <Box bg={"purple.50"} pb={8}>
+      <Box
+        w={"100%"}
+        display={"flex"}
+        alignItems={"center"}
+        pt={16}
+        flexDir={"column"}
+      >
+        <Heading fontSize={"3xl"} fontWeight={"normal"}>
           How Doublequote helps declutter your content
-        </h1>
+        </Heading>
 
         <div
           className={
@@ -57,7 +64,7 @@ export const Features = () => {
             <FeatureWidget icon={w.icon} title={w.title} body={w.body} />
           ))}
         </div>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };

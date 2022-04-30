@@ -53,6 +53,7 @@ func initApp() *fx.App {
 			fx.Annotate(sql.NewUserService, fx.As(new(domain.UserService))),
 			fx.Annotate(sql.NewEntryService, fx.As(new(domain.EntryService))),
 			fx.Annotate(sql.NewFeedService, fx.As(new(domain.FeedService))),
+			fx.Annotate(sql.NewCollectionEntryService, fx.As(new(domain.CollectionEntryService))),
 		),
 
 		fx.Invoke(listener.NewService),

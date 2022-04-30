@@ -1,21 +1,23 @@
-import Title from "../../../components/Title";
-import Text from "../../../components/Text";
+import { Box, Heading, Link, Text } from "@chakra-ui/react";
+import { Link as RouterLink } from "react-router-dom";
 
 export const Message = () => {
   return (
-    <div>
-      <Title className={"text-center font-extrabold"} size={"lg"}>
+    <Box>
+      <Heading
+        fontSize={"3xl"}
+        textAlign={"center"}
+        fontWeight={"extrabold"}
+        size={"lg"}
+      >
         Let's get you started
-      </Title>
-      <Text css={{ textAlign: "center", marginTop: "$2" }}>
+      </Heading>
+      <Text size={"md"} textAlign={"center"} mt={2}>
         Or{" "}
-        <a
-          href="/signin"
-          className="font-medium text-indigo-600 hover:text-indigo-500"
-        >
+        <Link as={RouterLink} to="/signin" fontWeight={"medium"}>
           sign in
-        </a>
+        </Link>
       </Text>
-    </div>
+    </Box>
   );
 };

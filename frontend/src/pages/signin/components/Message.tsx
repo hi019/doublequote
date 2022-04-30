@@ -1,23 +1,24 @@
-import Title from "../../../components/Title";
-import Text from "../../../components/Text";
-import { inlineCss } from "../../../stitches.config";
+import { Box, Heading, Link, Text } from "@chakra-ui/react";
+import { Link as RouterLink } from "react-router-dom";
 
 export const Message = () => {
   return (
-    <div>
-      <Title className={"text-center font-extrabold"} size={"lg"}>
+    <Box>
+      <Heading
+        fontSize={"3xl"}
+        textAlign={"center"}
+        fontWeight={"extrabold"}
+        size={"lg"}
+      >
         Welcome back
-      </Title>
-      <Text size={"md"} css={{ textAlign: "center", marginTop: "$2" }}>
+      </Heading>
+      <Text size={"md"} textAlign={"center"} mt={2}>
         Looking to{" "}
-        <a
-          href="/signup"
-          className="font-medium text-indigo-600 hover:text-indigo-500"
-        >
+        <Link as={RouterLink} to="/signup" fontWeight={"medium"}>
           sign up
-        </a>
+        </Link>
         ?
       </Text>
-    </div>
+    </Box>
   );
 };

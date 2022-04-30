@@ -1,3 +1,5 @@
+import { Box, Heading, Text } from "@chakra-ui/react";
+
 interface Props {
   title: string;
   body: string;
@@ -6,17 +8,26 @@ interface Props {
 
 export const FeatureWidget = ({ title, body, icon }: Props) => {
   return (
-    <div
-      className={"bg-white p-8 w-80 h-60"}
-      style={{ boxShadow: "0px 0px 3px -0.1px rgba(0, 0, 0, 0.25)" }}
+    <Box
+      bg={"white"}
+      p={8}
+      w={80}
+      h={60}
+      boxShadow={"0px 0px 3px -0.1px rgba(0, 0, 0, 0.25)"}
     >
-      <div className={"h-full"}>
-        <div className={"w-7 mb-3 text-purple-500"}>{icon}</div>
+      <Box h={"full"}>
+        <Box w={7} mb={3} textColor={"purple.500"}>
+          {icon}
+        </Box>
 
-        <h2 className={"font-serif text-gray-800 text-xl"}>{title}</h2>
+        <Heading fontSize={"xl"} fontWeight={"normal"} textColor={"gray.600"}>
+          {title}
+        </Heading>
 
-        <p className={"text-sm mt-3 text-gray-700"}>{body}</p>
-      </div>
-    </div>
+        <Text mt={3} textColor={"gray.700"}>
+          {body}
+        </Text>
+      </Box>
+    </Box>
   );
 };

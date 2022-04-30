@@ -79,8 +79,6 @@ func ifPresent[V any, P ~func(*entsql.Selector)](f func(V) P, v *V) P {
 	}
 }
 
-//func HasCollectionsWith(preds ...predicate.Collection) predicate.Feed {
-
 func maybeHasRelation[V any, P ~func(*entsql.Selector), A any](v *V, f func(...A) P, args ...A) P {
 	if v != nil {
 		return f(args...)

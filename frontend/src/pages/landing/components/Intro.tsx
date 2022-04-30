@@ -1,24 +1,45 @@
+import { Box, Heading, Image, Text, VStack } from "@chakra-ui/react";
+
 export const Intro = () => {
   return (
-    <div className={"bg-yellow-50 h-full"}>
-      <div className={"w-100 flex items-center text-center pt-16 flex-col"}>
-        <h1 className={"text-3xl font-serif text-gray-800 font-bold"}>
-          Read all of your content, in one place
-        </h1>
+    <Box
+      h={"full"}
+      display={"flex"}
+      alignItems={"center"}
+      textAlign={"center"}
+      flexDir={"column"}
+      justifyContent={"space-between"}
+    >
+      <Box pt={16} px={4} textAlign={"center"}>
+        <VStack gap={6}>
+          <Heading
+            fontFamily={"Playfair Display, ui-serif, Georgia"}
+            fontSize={"3xl"}
+            w={"90%"}
+            color={"gray.800"}
+            fontWeight={"bold"}
+          >
+            Read all of your content, in one place
+          </Heading>
 
-        <p className={"pt-8 w-4/5 md:w-1/3 text-center text-md text-gray-800"}>
-          Doublequote aggregates everything you read into a single
-          distraction-free user interface.
-        </p>
+          <Text
+            w={{ base: "80%", md: "60%", lg: "30%" }}
+            fontSize={"md"}
+            color={"gray.800"}
+          >
+            Doublequote aggregates everything you read into a single
+            distraction-free user interface.
+          </Text>
+        </VStack>
 
-        <div className={"w-3/5 h-96 mt-20"}>
-          <img src={"/doublequote.png"} />
-        </div>
-      </div>
+        <VStack mt={{ base: 20, lg: 12 }}>
+          <Image w={{ base: "100%", md: "60%" }} src={"/ui.png"} />
+        </VStack>
+      </Box>
 
-      <div className={"pt-6"}>
-        <img src={"/wave.svg"} alt={"Wave transition"} />
-      </div>
-    </div>
+      {/*<Box w={"100%"}>*/}
+      {/*  <img src={"/wave.svg"} alt={"Wave transition"} />*/}
+      {/*</Box>*/}
+    </Box>
   );
 };

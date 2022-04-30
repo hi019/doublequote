@@ -1,12 +1,8 @@
 import { useForm } from "react-hook-form";
-import { Button } from "../../../components/Button";
 import { InvalidParam } from "../../../api/types";
 import React from "react";
 import useDeepCompareEffect from "use-deep-compare-effect";
-import Input from "../../../components/Input";
-import { inlineCss } from "../../../stitches.config";
-import Div from "../../../components/Div";
-import Text from "../../../components/Text";
+import { Box, VStack, Text, Button, Input } from "@chakra-ui/react";
 
 interface Props {
   onSubmit: (data: SignupForm) => void;
@@ -37,17 +33,9 @@ export const Form = ({ onSubmit, isLoading, serverErrors }: Props) => {
   }, [[serverErrors]]);
 
   return (
-    <form
-      noValidate
-      className={inlineCss({
-        display: "flex",
-        gap: "$5",
-        flexDirection: "column",
-      })}
-      onSubmit={handleSubmit(onSubmit)}
-    >
-      <Div css={{ display: "flex", flexDirection: "column", gap: "$5" }}>
-        <div>
+    <VStack as={"form"} noValidate gap={3} onSubmit={handleSubmit(onSubmit)}>
+      <VStack w={"full"} gap={3}>
+        <Box w={"full"}>
           <Input
             id={"email"}
             type={"email"}
@@ -63,9 +51,9 @@ export const Form = ({ onSubmit, isLoading, serverErrors }: Props) => {
               {errors.email?.message}
             </Text>
           )}
-        </div>
+        </Box>
 
-        <div>
+        <Box w={"full"}>
           <Input
             id={"password"}
             type={"password"}
@@ -87,12 +75,12 @@ export const Form = ({ onSubmit, isLoading, serverErrors }: Props) => {
               {errors.password?.message}
             </Text>
           )}
-        </div>
-      </Div>
+        </Box>
+      </VStack>
 
-      <Button className={"w-full"} type={"submit"} isLoading={isLoading}>
+      <Button w={"full"} type={"submit"} isLoading={isLoading}>
         Sign up
       </Button>
-    </form>
+    </VStack>
   );
 };
