@@ -1,4 +1,4 @@
-import { Box, Heading, Image, Text, VStack } from "@chakra-ui/react";
+import { Box, Heading, Image, Skeleton, Text, VStack } from "@chakra-ui/react";
 
 export const Intro = () => {
   return (
@@ -29,7 +29,7 @@ export const Intro = () => {
 
         <VStack mt={{ base: 20, lg: 12 }}>
           <Image
-            fallback={<Box color={"blue.50"} />}
+            fallback={<Skeleton w={96} h={96} />}
             w={{ base: "100%", md: "60%" }}
             src={"/ui.png"}
           />
