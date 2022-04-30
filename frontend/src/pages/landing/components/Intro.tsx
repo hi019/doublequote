@@ -31,7 +31,7 @@ export const Intro = () => {
           <Image
             fallback={<Skeleton w={96} h={96} />}
             w={{ base: "100%", md: "60%" }}
-            src={"/ui.png"}
+            src={"/ui.webp"}
           />
         </VStack>
       </Box>
