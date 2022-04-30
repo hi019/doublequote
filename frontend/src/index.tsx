@@ -7,11 +7,13 @@ import { Provider } from "react-redux";
 import { store } from "./store";
 import { ChakraProvider } from "@chakra-ui/react";
 import theme from "./theme";
+import { AuthCheck } from "./components/AuthCheck";
 
 ReactDOM.render(
   <React.StrictMode>
     <ChakraProvider theme={theme}>
       <Provider store={store}>
+        <AuthCheck />
         <App />
       </Provider>
     </ChakraProvider>

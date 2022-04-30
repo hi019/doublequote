@@ -1,9 +1,12 @@
 import { Box, Button, Flex, Image } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
+import { useAppSelector } from "../../store/hooks";
+
 const Nav = () => {
+  const isSignedIn = useAppSelector((s) => s.user.isSignedIn);
+
   return (
     <Box
-      // bg={"purple.50"}
       h={14}
       px={24}
       pt={8}
@@ -17,12 +20,21 @@ const Nav = () => {
       />
 
       <Flex gap={4}>
-        <Button variant={"ghost"}>
-          <Link to={"/signin"}>Sign in</Link>
-        </Button>
-        <Button variant={"light"}>
-          <Link to={"/signup"}>Sign up</Link>
-        </Button>
+        {!isSignedIn && (
+          <>
+            <Button as={Link} to={"/signin"} variant={"ghost"}>
+              Sign in
+            </Button>
+            <Button as={Link} to={"/signup"} variant={"light"}>
+              Sign up
+            </Button>
+          </>
+        )}
+        {isSignedIn && (
+          <Button as={Link} to={"/collections"} variant={"ghost"}>
+            App
+          </Button>
+        )}
       </Flex>
     </Box>
   );

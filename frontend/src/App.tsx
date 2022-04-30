@@ -6,8 +6,9 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Signin } from "./pages/signin";
 import { RequireAuth } from "./components/RequireAuth";
-import { Protected } from "./components/Protected";
 import { Verify } from "./pages/verify";
+import Collections from "./pages/collections";
+import { Heading } from "@chakra-ui/react";
 
 function App() {
   return (
@@ -20,11 +21,13 @@ function App() {
           <Route path={"/signin"} element={<Signin />} />
 
           <Route element={<RequireAuth />}>
-            <Route path={"/protected"} element={<Protected />} />
+            <Route path={"/collections"} element={<Collections />} />
           </Route>
 
           <Route path={"/verify"} element={<Verify />} />
           <Route path={"/"} element={<Landing />} />
+
+          <Route path="*" element={<Heading>Not found</Heading>} />
         </Routes>
       </BrowserRouter>
     </>

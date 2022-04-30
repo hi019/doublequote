@@ -10,30 +10,29 @@ export const Intro = () => {
       flexDir={"column"}
       justifyContent={"space-between"}
     >
-      <Box pt={16} px={4} textAlign={"center"}>
+      <Box pt={16} px={8} textAlign={"center"}>
         <VStack gap={6}>
           <Heading
             fontFamily={"Playfair Display, ui-serif, Georgia"}
             fontSize={"3xl"}
-            w={"90%"}
             color={"gray.800"}
             fontWeight={"bold"}
           >
             Read all of your content, in one place
           </Heading>
 
-          <Text
-            w={{ base: "80%", md: "60%", lg: "30%" }}
-            fontSize={"md"}
-            color={"gray.800"}
-          >
+          <Text fontSize={"md"} color={"gray.800"}>
             Doublequote aggregates everything you read into a single
             distraction-free user interface.
           </Text>
         </VStack>
 
         <VStack mt={{ base: 20, lg: 12 }}>
-          <Image w={{ base: "100%", md: "60%" }} src={"/ui.png"} />
+          <Image
+            fallback={<Box color={"blue.50"} />}
+            w={{ base: "100%", md: "60%" }}
+            src={"/ui.png"}
+          />
         </VStack>
       </Box>
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Outlet, useLocation } from "react-router";
+import { Outlet, useLocation } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { useAppSelector } from "../store/hooks";
 import { Spinner } from "@chakra-ui/react";

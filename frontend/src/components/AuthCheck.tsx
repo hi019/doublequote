@@ -7,7 +7,7 @@ export const AuthCheck = () => {
   const { error, isLoading } = useAuthCheckQuery();
 
   if (!isLoading) {
-    dispatch(setIsSignedIn(error !== "Unauthorized."));
+    dispatch(setIsSignedIn(!error));
   }
 
   return null;
