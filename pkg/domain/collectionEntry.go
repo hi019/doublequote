@@ -22,15 +22,11 @@ type CollectionEntry struct {
 
 type CollectionEntryService interface {
 	FindCollectionEntryByID(ctx context.Context, id int, include CollectionEntryInclude) (*CollectionEntry, error)
-
 	FindCollectionEntries(ctx context.Context, filter CollectionEntryFilter, include CollectionEntryInclude) ([]*CollectionEntry, int, error)
-
 	FindCollectionEntry(ctx context.Context, filter CollectionEntryFilter, include CollectionEntryInclude) (*CollectionEntry, error)
-
 	CreateCollectionEntry(ctx context.Context, col *CollectionEntry) (*CollectionEntry, error)
-
+	CreateManyCollectionEntry(ctx context.Context, col []CollectionEntry) ([]CollectionEntry, error)
 	UpdateCollectionEntry(ctx context.Context, id int, upd CollectionEntryUpdate) (*CollectionEntry, error)
-
 	DeleteCollectionEntry(ctx context.Context, id int) error
 }
 

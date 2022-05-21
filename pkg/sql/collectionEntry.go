@@ -80,6 +80,22 @@ func (s *CollectionEntryService) CreateCollectionEntry(ctx context.Context, ce *
 	return transformColEntry(c), err
 }
 
+func (s *CollectionEntryService) CreateManyCollectionEntry(ctx context.Context, ces []domain.CollectionEntry) ([]domain.CollectionEntry, error) {
+	panic("Implement me")
+	//bulk := make([]*ent.EntryCreate, len(entries))
+	//for i, ce := range ces {
+	//	bulk[i] = s.sql.client.CollectionEntry.Create().
+	//		SetCollectionID(ce.CollectionID).
+	//		SetEntryID(ce.EntryID)
+	//}
+	//created, err := s.sql.client.CollectionEntry.CreateBulk(bulk...).Save(ctx)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//return transformColEntryArray(created), nil
+}
+
 func (s *CollectionEntryService) UpdateCollectionEntry(ctx context.Context, id int, upd domain.CollectionEntryUpdate) (c *domain.CollectionEntry, err error) {
 	q := s.sql.client.CollectionEntry.UpdateOneID(id)
 

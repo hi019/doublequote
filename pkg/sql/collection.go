@@ -42,7 +42,8 @@ func (s *CollectionService) FindCollections(ctx context.Context, filter domain.C
 		Where(
 			ifPresent(collection.IDEQ, filter.ID),
 			ifPresent(collection.NameEQ, filter.Name),
-			ifPresent(collection.IDEQ, filter.UserID),
+			collection.HasUserWith(ifPresent(user.IDEQ, filter.UserID)),
+			collection.HasFeedsWith(ifPresent(feed.IDEQ, filter.FeedID)),
 		).
 		With(withCollectionInclude(include)).
 		Limit(filter.Limit).
